@@ -1,22 +1,25 @@
 package com.patojunit.service;
 
+import com.patojunit.dto.request.ProductoCrearEditarDTO;
+import com.patojunit.dto.response.ProductoGetDTO;
 import com.patojunit.model.Producto;
 import com.patojunit.repository.IProductoRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class ProductoServiceTest {
 
     @Mock
@@ -26,156 +29,160 @@ class ProductoServiceTest {
     private ProductoService productoService;
 
     private Producto producto;
+    private ProductoCrearEditarDTO crearEditarDTO;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-
         producto = new Producto();
         producto.setId(1L);
-        producto.setNombre("Sombrilla");
+        producto.setNombre("reposera");
         producto.setPrecioHora(BigDecimal.valueOf(100));
         producto.setStockDisponible(10);
-        producto.setCantidadReservada(2);
+        producto.setCantidadReservada(0);
+        producto.setCodigoProducto("PROD-GAL-1234");
+
+        crearEditarDTO = new ProductoCrearEditarDTO();
+        crearEditarDTO.setNombre("carpa");
+        crearEditarDTO.setPrecioHora(BigDecimal.valueOf(100));
+        crearEditarDTO.setStockDisponible(10);
+        crearEditarDTO.setCantidadReservada(0);
     }
 
-    // ✅ eliminar(Long id)
     @Test
-    void eliminar_DeberiaEliminarProductoSiExiste() {
+    void crear_DeberiaGuardarYRetornarDTO() {
+        when(productoRepository.save(any(Producto.class))).thenReturn(producto);
+
+        ProductoGetDTO result = productoService.crear(crearEditarDTO);
+
+        assertNotNull(result);
+        assertEquals("reposera", result.getNombre());
+        verify(productoRepository).save(any(Producto.class));
+    }
+
+    @Test
+    void editar_DeberiaActualizarYRetornarDTO() {
+        when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
+        when(productoRepository.save(any(Producto.class))).thenReturn(producto);
+
+        ProductoGetDTO result = productoService.editar(1L, crearEditarDTO);
+
+        assertEquals("carpa", result.getNombre());
+        verify(productoRepository, times(1)).save(any(Producto.class));
+    }
+
+    @Test
+    void editar_DeberiaLanzarExcepcionSiNoExiste() {
+        when(productoRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () ->
+                productoService.editar(99L, crearEditarDTO)
+        );
+    }
+
+    @Test
+    void eliminar_DeberiaEliminarSiExiste() {
+        Producto producto1= new Producto();
+        producto1.setId(1L);
         when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
 
         productoService.eliminar(1L);
 
-        verify(productoRepository, times(1)).deleteById(1L);
+        verify(productoRepository).deleteById(1L);
     }
 
     @Test
-    void eliminar_NoDeberiaEliminarSiNoExiste() {
-        when(productoRepository.findById(anyLong())).thenReturn(Optional.empty());
+    void eliminar_DeberiaLanzarExcepcionSiNoExiste() {
+        when(productoRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () -> productoService.eliminar(99L));
+        assertThrows(IllegalArgumentException.class, () ->
+                productoService.eliminar(1L)
+        );
+
+        verify(productoRepository, never()).deleteById(anyLong());
     }
 
-    // ✅ editar(Long id, Producto objeto)
-    @Test
-    void editar_DeberiaActualizarCamposYGuardarProducto() {
-        Producto datosNuevos = new Producto();
-        datosNuevos.setNombre("Reposera");
-        datosNuevos.setPrecioHora(BigDecimal.valueOf(300));
-        datosNuevos.setStockDisponible(15);
-        datosNuevos.setCantidadReservada(5);
-
-        when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
-        when(productoRepository.save(any(Producto.class))).thenReturn(producto);
-
-        Producto actualizado = productoService.editar(1L, datosNuevos);
-
-        assertEquals("Reposera", actualizado.getNombre());
-        assertEquals(BigDecimal.valueOf(300), actualizado.getPrecioHora());
-        assertEquals(15, actualizado.getStockDisponible());
-        assertEquals(5, actualizado.getCantidadReservada());
-        assertNotNull(actualizado.getFechaUltimaActualizacion());
-        assertTrue(actualizado.getCodigoProducto().startsWith("PROD-"));
-
-        verify(productoRepository).save(any(Producto.class));
-    }
-
-    // ✅ generarCodigoProducto(String nombre)
-    @Test
-    void generarCodigoProducto_DeberiaGenerarCodigoValido() {
-        String codigo = productoService.generarCodigoProducto("Tabla");
-        assertTrue(codigo.startsWith("PROD-TAB-"));
-        assertEquals(13, codigo.length()); // PROD-TAB-XXXX
-    }
-
-    // ✅ crear(Producto objeto)
-    @Test
-    void crear_DeberiaAsignarCodigoYFechaAltaYGuardar() {
-        when(productoRepository.save(any(Producto.class))).thenReturn(producto);
-
-        Producto creado = productoService.crear(producto);
-
-        assertNotNull(creado.getCodigoProducto());
-        assertNotNull(creado.getFechaAlta());
-        assertNull(creado.getFechaUltimaActualizacion());
-
-        verify(productoRepository).save(any(Producto.class));
-    }
-
-    // ✅ getAll()
     @Test
     void getAll_DeberiaRetornarListaDeProductos() {
         when(productoRepository.findAll()).thenReturn(List.of(producto));
 
-        List<Producto> resultado = productoService.getAll();
+        List<ProductoGetDTO> result = productoService.getAll();
 
-        assertEquals(1, resultado.size());
+        assertEquals(1, result.size());
+        assertEquals("reposera", result.get(0).getNombre());
         verify(productoRepository).findAll();
     }
 
-    // ✅ get(Long id)
     @Test
-    void get_DeberiaRetornarProductoSiExiste() {
+    void get_DeberiaRetornarProductoDTO() {
         when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
 
-        Producto resultado = productoService.get(1L);
+        ProductoGetDTO result = productoService.get(1L);
 
-        assertEquals("Sombrilla", resultado.getNombre());
+        assertEquals("reposera", result.getNombre());
         verify(productoRepository).findById(1L);
     }
 
     @Test
     void get_DeberiaLanzarExcepcionSiNoExiste() {
-        when(productoRepository.findById(99L)).thenReturn(Optional.empty());
+        when(productoRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () -> productoService.get(99L));
+        assertThrows(IllegalArgumentException.class, () -> productoService.get(1L));
     }
 
-    // ✅ getStock(Long id)
     @Test
-    void getStock_DeberiaRetornarStockDisponible() {
+    void getStock_DeberiaRetornarStock() {
         when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
 
         int stock = productoService.getStock(1L);
 
         assertEquals(10, stock);
+        verify(productoRepository).findById(1L);
     }
 
-    // ✅ guardar(Producto producto)
     @Test
-    void guardar_DeberiaGuardarProducto() {
-        when(productoRepository.save(producto)).thenReturn(producto);
+    void modificarStock_DeberiaActualizarValoresYGuardar() {
+        productoService.modificarStock(producto, 2);
 
-        Producto resultado = productoService.guardar(producto);
-
-        assertEquals(producto, resultado);
+        assertEquals(8, producto.getStockDisponible());
+        assertEquals(2, producto.getCantidadReservada());
         verify(productoRepository).save(producto);
     }
 
-    // ✅ modificarStock(Producto producto)
     @Test
-    void modificarStock_DeberiaReducirStockYAumentarReservado() {
-        productoService.modificarStock(producto);
+    void modificarStock_DeberiaLanzarExcepcionSiStockNegativo() {
+        producto.setStockDisponible(1);
 
-        assertEquals(9, producto.getStockDisponible());
-        assertEquals(3, producto.getCantidadReservada());
+        assertThrows(IllegalArgumentException.class, () ->
+                productoService.modificarStock(producto, 5)
+        );
     }
 
     @Test
-    void modificarStock_DeberiaLanzarExcepcionSiSuperaInventario() {
-        producto.setStockDisponible(0);
-        producto.setCantidadReservada(10);
+    void restablecerStock_DeberiaSumarStockYGuardar() {
+        producto.setCantidadReservada(5);
+        producto.setStockDisponible(10);
 
-        assertThrows(IllegalArgumentException.class, () -> productoService.modificarStock(producto));
+        productoService.restablecerStock(producto, 3);
+
+        assertEquals(13, producto.getStockDisponible()); // ✅ 10 + 3
+        assertEquals(2, producto.getCantidadReservada()); // ✅ 5 - 3
+        verify(productoRepository).save(producto);
     }
 
-    // ✅ restablecerStock(Producto producto)
     @Test
-    void restablecerStock_DeberiaRevertirStockCorrectamente() {
-        productoService.restablecerStock(producto);
+    void getEntity_DeberiaRetornarProducto() {
+        when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
 
-        assertEquals(11, producto.getStockDisponible());
-        assertEquals(1, producto.getCantidadReservada());
+        Producto result = productoService.getEntity(1L);
+
+        assertEquals("reposera", result.getNombre());
+        verify(productoRepository).findById(1L);
+    }
+
+    @Test
+    void getEntity_DeberiaLanzarExcepcionSiNoExiste() {
+        when(productoRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> productoService.getEntity(1L));
     }
 }
-

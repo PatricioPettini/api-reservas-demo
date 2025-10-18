@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
+import java.util.Set;
 
 @Component
 @Profile("!test")  // evita que corra durante los tests
@@ -54,7 +55,7 @@ public class DataInitializer implements CommandLineRunner {
             admin.setAccountNotExpired(true);
             admin.setCredentialNotExpired(true);
             admin.setAccountNotLocked(true);
-            admin.setRolesList(Collections.singleton(adminRole));
+            admin.setRolesList(Set.of(adminRole, userRole));
             return userRepository.save(admin);
         });
 

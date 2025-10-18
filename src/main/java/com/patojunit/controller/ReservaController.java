@@ -1,6 +1,7 @@
 package com.patojunit.controller;
 
-import com.patojunit.model.Reserva;
+import com.patojunit.dto.request.ReservaCrearEditarDTO;
+import com.patojunit.dto.response.ReservaGetDTO;
 import com.patojunit.service.IReservaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,31 +26,31 @@ public class ReservaController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/get")
-    public List<Reserva> getAllReservas(){
+    public List<ReservaGetDTO> getAllReservas(){
         return reservaService.getAll();
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/get/{id}")
-    public Reserva getReserva(@PathVariable Long id){
+    public ReservaGetDTO getReserva(@PathVariable Long id){
         return reservaService.get(id);
     }
 
     @PreAuthorize("hasRole('USER')")
     @PostMapping("/crear")
-    public Reserva crearReserva(@Valid @RequestBody Reserva reserva){
+    public ReservaGetDTO crearReserva(@Valid @RequestBody ReservaCrearEditarDTO reserva){
         return reservaService.crear(reserva);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/editar/{id}")
-    public Reserva editarReserva(@PathVariable Long id, @Valid @RequestBody Reserva reserva){
+    public ReservaGetDTO editarReserva(@PathVariable Long id, @Valid @RequestBody ReservaCrearEditarDTO reserva){
         return reservaService.editar(id, reserva);
     }
 
     @PreAuthorize("hasRole('USER')")
     @PatchMapping("/{id}")
-    public Reserva cancelarReserva(@PathVariable Long id){
+    public ReservaGetDTO cancelarReserva(@PathVariable Long id){
         return reservaService.cancelarReserva(id);
     }
 

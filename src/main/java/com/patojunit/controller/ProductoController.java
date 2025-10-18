@@ -1,6 +1,7 @@
 package com.patojunit.controller;
 
-import com.patojunit.model.Producto;
+import com.patojunit.dto.request.ProductoCrearEditarDTO;
+import com.patojunit.dto.response.ProductoGetDTO;
 import com.patojunit.service.IProductoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,13 +26,13 @@ public class ProductoController {
 
     @PreAuthorize("hasRole('USER')")
     @GetMapping("/get")
-    public List<Producto> getAllProductos(){
+    public List<ProductoGetDTO> getAllProductos(){
         return productoService.getAll();
     }
 
     @PreAuthorize("hasRole('USER')")
     @GetMapping("/get/{id}")
-    public Producto getProducto(@PathVariable Long id){
+    public ProductoGetDTO getProducto(@PathVariable Long id){
         return productoService.get(id);
     }
 
@@ -43,13 +44,13 @@ public class ProductoController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/crear")
-    public Producto crearProducto(@Valid @RequestBody Producto producto){
+    public ProductoGetDTO crearProducto(@Valid @RequestBody ProductoCrearEditarDTO producto){
         return productoService.crear(producto);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/editar/{id}")
-    public Producto editarProducto(@PathVariable Long id,@Valid @RequestBody Producto producto){
+    public ProductoGetDTO editarProducto(@PathVariable Long id,@Valid @RequestBody ProductoCrearEditarDTO producto){
         return productoService.editar(id, producto);
     }
 

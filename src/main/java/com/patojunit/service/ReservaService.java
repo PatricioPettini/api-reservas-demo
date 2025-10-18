@@ -1,6 +1,12 @@
 package com.patojunit.service;
 
+import com.patojunit.dto.request.ReservaCrearEditarDTO;
+import com.patojunit.dto.request.ProductoCantidadCrearEditarDTO;
+import com.patojunit.dto.response.ProductoCantidadGetDTO;
+import com.patojunit.dto.response.ProductoGetDTO;
+import com.patojunit.dto.response.ReservaGetDTO;
 import com.patojunit.model.Producto;
+import com.patojunit.model.ProductoCantidad;
 import com.patojunit.model.Reserva;
 import com.patojunit.repository.IReservaRepository;
 import jakarta.transaction.Transactional;
@@ -15,125 +21,182 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class ReservaService implements IReservaService{
+public class ReservaService implements IReservaService {
 
     private final IReservaRepository reservaRepository;
-
     private final IProductoService productoService;
 
     @Override
-    public void eliminar(Long id) {
-        if(get(id) != null) {
-            reservaRepository.deleteById(id);
-        }
-    }
-
-    @Override
     @Transactional
-    public Reserva editar(Long id, Reserva objeto) {
+    public ReservaGetDTO crear(ReservaCrearEditarDTO dto) {
+        Reserva reserva = mapToEntity(dto);
 
-        Reserva reserva=get(id);
-
-        List<Producto> productosActualizados = new ArrayList<>();
-
-        for (Producto p : objeto.getProductos()) {
-            verificarReserva(p.getId());
-            Producto producto = productoService.get(p.getId());
-            productosActualizados.add(producto);
+        List<ProductoCantidad> productosActualizados = new ArrayList<>();
+        for (ProductoCantidadCrearEditarDTO p : dto.getProductos()) {
+            verificarReserva(p.getIdProducto(), p.getCantidad());
+            productosActualizados.add(mapToProductoCantidad(p, reserva));
         }
         reserva.setProductos(productosActualizados);
-        reserva.setEstado(objeto.getEstado());
-        reserva.setFechaInicio(objeto.getFechaInicio());
-        reserva.setFechaFin(objeto.getFechaFin());
+        reserva.setCodigoReserva(generarCodigoReserva(dto.getTelefonoCliente()));
         reserva.setPrecioTotal(calcularPrecioTotalReserva(reserva));
-        reserva.setCodigoReserva(generarCodigoReserva(reserva.getTelefonoCliente()));
-        reserva.setPagado(objeto.getPagado());
-        reserva.setTelefonoCliente(objeto.getTelefonoCliente());
 
-        return reservaRepository.save(reserva);
+        Reserva guardada = reservaRepository.save(reserva);
+        return mapToGetDTO(guardada);
     }
 
     @Override
     @Transactional
-    public Reserva crear(Reserva objeto) {
+    public ReservaGetDTO editar(Long id, ReservaCrearEditarDTO dto) {
+        Reserva reserva = getEntity(id);
 
-        List<Producto> productosActualizados = new ArrayList<>();
-
-        for (Producto p : objeto.getProductos()) {
-            verificarReserva(p.getId());
-            Producto producto = productoService.get(p.getId());
-            productosActualizados.add(producto);
+        if (dto.getProductos() != null && !dto.getProductos().isEmpty()) {
+            List<ProductoCantidad> productosActualizados = new ArrayList<>();
+            for (ProductoCantidadCrearEditarDTO p : dto.getProductos()) {
+                verificarReserva(p.getIdProducto(), p.getCantidad());
+                productosActualizados.add(mapToProductoCantidad(p, reserva));
+            }
+            reserva.setProductos(productosActualizados);
         }
 
-        objeto.setCodigoReserva(generarCodigoReserva(objeto.getTelefonoCliente()));
-        objeto.setProductos(productosActualizados);
-        objeto.setPrecioTotal(calcularPrecioTotalReserva(objeto));
-        return reservaRepository.save(objeto);
-    }
+        reserva.setFechaInicio(dto.getFechaInicio());
+        reserva.setFechaFin(dto.getFechaFin());
+        reserva.setPrecioTotal(calcularPrecioTotalReserva(reserva));
+        reserva.setCodigoReserva(generarCodigoReserva(dto.getTelefonoCliente()));
+        reserva.setPagado(dto.getPagado());
+        reserva.setTelefonoCliente(dto.getTelefonoCliente());
 
-    String generarCodigoReserva(String telefonoCliente){
-        String prefijo = telefonoCliente.length() >= 5 ? telefonoCliente.substring(0, 5).toUpperCase() : telefonoCliente.toUpperCase();
-        String sufijo = UUID.randomUUID().toString().substring(0, 4).toUpperCase();
-
-        return "RES-" + prefijo + "-" + sufijo;
-    }
-
-    public void verificarReserva(Long idProducto){
-
-        Producto producto=productoService.get(idProducto);
-
-        if(producto.getStockDisponible() == 0){
-            throw new IllegalArgumentException("No hay stock disponible para este producto!");
-        }
-
-        modificarStock(producto);
-    }
-
-    public void modificarStock(Producto producto) {
-        productoService.modificarStock(producto);
+        Reserva actualizada = reservaRepository.save(reserva);
+        return mapToGetDTO(actualizada);
     }
 
     @Override
-    public List<Reserva> getAll() {
-        return reservaRepository.findAll();
+    public void eliminar(Long id) {
+        getEntity(id);
+        reservaRepository.deleteById(id);
     }
 
     @Override
-    public Reserva get(Long id) {
-        return reservaRepository.findById(id).orElseThrow(()->new IllegalArgumentException("No existe reserva con ese id"));
+    public List<ReservaGetDTO> getAll() {
+        return reservaRepository.findAll()
+                .stream()
+                .map(this::mapToGetDTO)
+                .toList();
+    }
+
+    @Override
+    public ReservaGetDTO get(Long id) {
+        Reserva reserva = getEntity(id);
+        return mapToGetDTO(reserva);
     }
 
     @Override
     @Transactional
-    public Reserva cancelarReserva(Long id) {
-        Reserva reserva=get(id);
+    public ReservaGetDTO cancelarReserva(Long id) {
+        Reserva reserva = getEntity(id);
 
-        if(reserva.getEstado().equals("cancelado")) throw new IllegalArgumentException("La reserva ya se encuentra cancelada");
+        if ("cancelado".equalsIgnoreCase(reserva.getEstado())) {
+            throw new IllegalArgumentException("La reserva ya se encuentra cancelada");
+        }
 
         reserva.setEstado("cancelado");
 
-        for (Producto producto : reserva.getProductos()){
-                Producto producto1=productoService.get(producto.getId());
-                restablecerStock(producto1);
-            }
+        for (ProductoCantidad productoCantidad : reserva.getProductos()) {
+            Producto producto = productoCantidad.getProducto();
+            restablecerStock(producto, productoCantidad.getCantidad());
+        }
 
-        return reservaRepository.save(reserva);
+        Reserva cancelada = reservaRepository.save(reserva);
+        return mapToGetDTO(cancelada);
     }
 
-    public void restablecerStock(Producto producto) {
-        productoService.restablecerStock(producto);
+    @Override
+    public Reserva getEntity(Long id) {
+        return reservaRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("No existe reserva con ese id"));
+    }
+
+    private void verificarReserva(Long idProducto, int cantidad) {
+        Producto producto = productoService.getEntity(idProducto);
+        if (producto.getStockDisponible() < cantidad) {
+            throw new IllegalArgumentException("Stock insuficiente para este producto!");
+        }
+        productoService.modificarStock(producto, cantidad);
+    }
+
+    private void restablecerStock(Producto producto, int cantidad) {
+        productoService.restablecerStock(producto, cantidad);
+    }
+
+    private String generarCodigoReserva(String telefonoCliente) {
+        String prefijo = telefonoCliente.length() >= 5
+                ? telefonoCliente.substring(0, 5).toUpperCase()
+                : telefonoCliente.toUpperCase();
+        String sufijo = UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+        return "RES-" + prefijo + "-" + sufijo;
     }
 
     public BigDecimal calcularPrecioTotalReserva(Reserva reserva) {
-        long duracionReserva=Duration.between(reserva.getFechaInicio(), reserva.getFechaFin()).toHours();
-        BigDecimal precioTotal = BigDecimal.ZERO;
-        BigDecimal horas = BigDecimal.valueOf(duracionReserva);
+        long duracion = Duration.between(reserva.getFechaInicio(), reserva.getFechaFin()).toHours();
+        BigDecimal horas = BigDecimal.valueOf(duracion);
+        BigDecimal total = BigDecimal.ZERO;
 
-        for (Producto producto:reserva.getProductos()){
-            Producto producto1=productoService.get(producto.getId());
-            precioTotal=precioTotal.add(producto1.getPrecioHora().multiply(horas));
+        for (ProductoCantidad productoCantidad : reserva.getProductos()) {
+            ProductoGetDTO producto = productoService.get(productoCantidad.getProducto().getId());
+            total = total.add(
+                    producto.getPrecioHora()
+                            .multiply(horas)
+                            .multiply(BigDecimal.valueOf(productoCantidad.getCantidad()))
+            );
         }
-
-        return precioTotal;
+        return total;
     }
+
+    private Reserva mapToEntity(ReservaCrearEditarDTO dto) {
+        Reserva r = new Reserva();
+        r.setFechaInicio(dto.getFechaInicio());
+        r.setFechaFin(dto.getFechaFin());
+        r.setPagado(dto.getPagado());
+        r.setTelefonoCliente(dto.getTelefonoCliente());
+        return r;
+    }
+
+    private ProductoCantidad mapToProductoCantidad(ProductoCantidadCrearEditarDTO dto, Reserva reserva) {
+        ProductoCantidad pc = new ProductoCantidad();
+        Producto producto = productoService.getEntity(dto.getIdProducto());
+        pc.setProducto(producto);
+        pc.setCantidad(dto.getCantidad());
+        pc.setReserva(reserva);
+        return pc;
+    }
+
+
+    private ReservaGetDTO mapToGetDTO(Reserva reserva) {
+        ReservaGetDTO dto = new ReservaGetDTO();
+        dto.setId(reserva.getId());
+        dto.setCodigoReserva(reserva.getCodigoReserva());
+        dto.setEstado(reserva.getEstado());
+        dto.setTelefonoCliente(reserva.getTelefonoCliente());
+        dto.setPagado(reserva.getPagado());
+        dto.setFechaInicio(reserva.getFechaInicio());
+        dto.setFechaFin(reserva.getFechaFin());
+        dto.setPrecioTotal(reserva.getPrecioTotal());
+
+        dto.setProductos(
+                reserva.getProductos().stream()
+                        .map(this::mapToProductoCantidadGetDTO)
+                        .toList()
+        );
+
+        return dto;
+    }
+
+    private ProductoCantidadGetDTO mapToProductoCantidadGetDTO(ProductoCantidad pc) {
+        ProductoCantidadGetDTO dto = new ProductoCantidadGetDTO();
+        dto.setNombreProducto(pc.getProducto().getNombre());
+        dto.setCantidad(pc.getCantidad());
+        dto.setCantidad(pc.getCantidad());
+        return dto;
+    }
+
+
 }

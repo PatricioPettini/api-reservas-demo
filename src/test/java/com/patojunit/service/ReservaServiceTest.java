@@ -1,6 +1,11 @@
 package com.patojunit.service;
 
+import com.patojunit.dto.request.ProductoCantidadCrearEditarDTO;
+import com.patojunit.dto.request.ReservaCrearEditarDTO;
+import com.patojunit.dto.response.ProductoGetDTO;
+import com.patojunit.dto.response.ReservaGetDTO;
 import com.patojunit.model.Producto;
+import com.patojunit.model.ProductoCantidad;
 import com.patojunit.model.Reserva;
 import com.patojunit.repository.IReservaRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -8,14 +13,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -25,334 +31,175 @@ class ReservaServiceTest {
     private IReservaRepository reservaRepository;
 
     @Mock
-    private ProductoService productoService;
+    private IProductoService productoService;
 
-    @Spy
     @InjectMocks
     private ReservaService reservaService;
 
     private Producto producto;
-
-
+    private ProductoGetDTO productoGetDTO;
+    private Reserva reserva;
+    private ReservaCrearEditarDTO crearDTO;
+    private ProductoCantidadCrearEditarDTO pcDTO;
 
     @BeforeEach
     void setUp() {
         producto = new Producto();
         producto.setId(1L);
-        producto.setPrecioHora(BigDecimal.valueOf(100)); // 👈 Precio válido
-        producto.setNombre("Producto test");
+        producto.setNombre("Reposera");
+        producto.setStockDisponible(10);
+        producto.setPrecioHora(BigDecimal.valueOf(50));
 
-    }
+        productoGetDTO = new ProductoGetDTO();
+        productoGetDTO.setId(1L);
+        productoGetDTO.setNombre("Reposera");
+        productoGetDTO.setPrecioHora(BigDecimal.valueOf(50));
 
-    @Test
-    void eliminar_DeberiaEliminarCuandoExiste() {
-        // Simula que la reserva existe
-        Reserva reserva = new Reserva();
+        pcDTO = new ProductoCantidadCrearEditarDTO();
+        pcDTO.setIdProducto(1L);
+        pcDTO.setCantidad(2);
+
+        crearDTO = new ReservaCrearEditarDTO();
+        crearDTO.setTelefonoCliente("1122334455");
+        crearDTO.setPagado(true);
+        crearDTO.setFechaInicio(LocalDateTime.now());
+        crearDTO.setFechaFin(LocalDateTime.now().plusHours(2));
+        crearDTO.setProductos(List.of(pcDTO));
+
+        ProductoCantidad pc = new ProductoCantidad();
+        pc.setId(1L);
+        pc.setProducto(producto);
+        pc.setCantidad(2);
+
+        reserva = new Reserva();
         reserva.setId(1L);
+        reserva.setTelefonoCliente("1122334455");
+        reserva.setEstado("reservado");
+        reserva.setPagado(true);
+        reserva.setFechaInicio(crearDTO.getFechaInicio());
+        reserva.setFechaFin(crearDTO.getFechaFin());
+        reserva.setProductos(List.of(pc));
+    }
+
+    @Test
+    void crear_DeberiaGuardarYRetornarDTO() {
+        when(productoService.getEntity(1L)).thenReturn(producto);
+        when(productoService.get(1L)).thenReturn(productoGetDTO);
+        when(reservaRepository.save(any(Reserva.class))).thenReturn(reserva);
+
+        ReservaGetDTO result = reservaService.crear(crearDTO);
+
+        assertNotNull(result);
+        assertEquals("en curso", result.getEstadoActual());
+        assertEquals("1122334455", result.getTelefonoCliente());
+        verify(productoService).modificarStock(producto, 2);
+        verify(reservaRepository).save(any(Reserva.class));
+    }
+
+    @Test
+    void editar_DeberiaActualizarYGuardar() {
         when(reservaRepository.findById(1L)).thenReturn(Optional.of(reserva));
+        when(productoService.getEntity(1L)).thenReturn(producto);
+        when(productoService.get(1L)).thenReturn(productoGetDTO);
+        when(reservaRepository.save(any(Reserva.class))).thenReturn(reserva);
 
-        // Ejecuta el método
-        reservaService.eliminar(1L);
+        ReservaGetDTO result = reservaService.editar(1L, crearDTO);
 
-        // Verifica que se haya eliminado
-        verify(reservaRepository, times(1)).deleteById(1L);
+        assertEquals("en curso", result.getEstadoActual());
+        verify(productoService).modificarStock(producto, 2);
+        verify(reservaRepository).save(any(Reserva.class));
     }
 
     @Test
-    void eliminar_DeberiaLanzarExcepcionCuandoNoExiste() {
-        when(reservaRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThrows(IllegalArgumentException.class, () -> {
-            reservaService.eliminar(99L);
-        });
-
-        verify(reservaRepository, never()).deleteById(anyLong());
+    void editar_DeberiaLanzarExcepcionSiNoExiste() {
+        when(reservaRepository.findById(1L)).thenReturn(Optional.empty());
+        assertThrows(IllegalArgumentException.class, () -> reservaService.editar(1L, crearDTO));
     }
 
     @Test
-    void editar_DeberiaActualizarReservaCuandoExiste() {
-
-        Reserva reservaExistente = new Reserva();
-        reservaExistente.setId(1L);
-        reservaExistente.setProductos(new ArrayList<>());
-        reservaExistente.setTelefonoCliente("111111");
-
-        Reserva reservaEditada = new Reserva();
-        reservaEditada.setEstado("CONFIRMADA");
-        reservaEditada.setFechaInicio(LocalDateTime.now().plusMinutes(2));
-        reservaEditada.setFechaFin(LocalDateTime.now().plusMinutes(3));
-        reservaEditada.setPagado(true);
-        reservaEditada.setTelefonoCliente("222222");
-        reservaEditada.setProductos(List.of(producto));
-        // Simula que existe una reserva con el ID dado
-        when(reservaRepository.findById(1L)).thenReturn(Optional.of(reservaExistente));
-
-        // Simula que el producto existe
-        when(productoService.get(1L)).thenReturn(producto);
-
-        doNothing().when(reservaService).verificarReserva(anyLong());
-
-        // Simula el guardado exitoso
-        when(reservaRepository.save(any(Reserva.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        // Ejecuta el método
-        Reserva resultado = reservaService.editar(1L, reservaEditada);
-
-        // Validaciones
-        assertNotNull(resultado);
-        assertEquals("CONFIRMADA", resultado.getEstado());
-        assertEquals(1, resultado.getProductos().size());
-        assertTrue(resultado.getPagado());
-        assertEquals("222222", resultado.getTelefonoCliente());
-
-        // Verifica que haya guardado
-        verify(reservaRepository, times(1)).save(any(Reserva.class));
-    }
-
-    @Test
-    void editar_DeberiaLanzarExcepcionCuandoNoExisteReserva() {
-
-        Reserva reservaEditada = new Reserva();
-        reservaEditada.setEstado("CONFIRMADA");
-        reservaEditada.setFechaInicio(LocalDateTime.now().plusMinutes(2));
-        reservaEditada.setFechaFin(LocalDateTime.now().plusMinutes(3));
-        reservaEditada.setPagado(true);
-        reservaEditada.setTelefonoCliente("222222");
-        reservaEditada.setProductos(List.of(producto));
-
-        // Simula que no se encuentra la reserva
-        when(reservaRepository.findById(99L)).thenReturn(Optional.empty());
-
-        // Verifica que lanza excepción
-        assertThrows(IllegalArgumentException.class, () -> {
-            reservaService.editar(99L, reservaEditada);
-        });
-
-        verify(reservaRepository, never()).save(any());
-    }
-
-    @Test
-    void crear_DeberiaCrearReservaConCodigoYPrecio() {
-        // Simula que la verificación de stock no lanza excepción
-        doNothing().when(reservaService).verificarReserva(anyLong());
-
-        // Simula que el producto existe
-        when(productoService.get(1L)).thenReturn(producto);
-
-        // Simula el cálculo del precio total
-        doReturn(BigDecimal.valueOf(300)).when(reservaService).calcularPrecioTotalReserva(any(Reserva.class));
-
-        // Simula el guardado
-        when(reservaRepository.save(any(Reserva.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        // Crea una reserva nueva con 1 producto
-        Reserva nueva = new Reserva();
-        nueva.setTelefonoCliente("123456789");
-        nueva.setProductos(List.of(producto));
-
-        // Ejecuta el método
-        Reserva resultado = reservaService.crear(nueva);
-
-        // Validaciones
-        assertNotNull(resultado);
-        assertNotNull(resultado.getCodigoReserva());
-        assertTrue(resultado.getCodigoReserva().startsWith("RES-"));
-        assertEquals(1, resultado.getProductos().size());
-        assertEquals(BigDecimal.valueOf(300), resultado.getPrecioTotal());
-
-        // Verifica que se haya guardado
-        verify(reservaRepository, times(1)).save(any(Reserva.class));
-    }
-
-    @Test
-    void crear_DeberiaLanzarExcepcionCuandoNoHayStock() {
-        // 🔹 Producto con stock 0
-        Producto sinStock = new Producto();
-        sinStock.setId(1L);
-        sinStock.setNombre("Producto sin stock");
-        sinStock.setStockDisponible(0); // 👈 clave
-
-        // 🔹 Reserva con ese producto
-        Reserva reservaSinStock = new Reserva();
-        reservaSinStock.setTelefonoCliente("123456789");
-        reservaSinStock.setProductos(List.of(sinStock));
-
-        // 🔹 Mock: cuando productoService.get() se llama, devuelve el producto sin stock
-        when(productoService.get(1L)).thenReturn(sinStock);
-
-        // ✅ Esperamos que lance IllegalArgumentException
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> {
-            reservaService.crear(reservaSinStock);
-        });
-
-        assertEquals("No hay stock disponible para este producto!", ex.getMessage());
-
-        // Verifica que nunca se haya guardado la reserva
-        verify(reservaRepository, never()).save(any(Reserva.class));
-    }
-
-    @Test
-    void modificarStock_DeberiaLlamarAlServicioDeProducto() {
-        // Simula un producto cualquiera
-        producto = new Producto();
-        producto.setId(1L);
-
-        // Ejecuta el método
-        reservaService.modificarStock(producto);
-
-        // Verifica que el servicio de producto fue llamado
-        verify(productoService, times(1)).modificarStock(producto);
-    }
-
-    @Test
-    void getAll_DeberiaRetornarListaDeReservas() {
-        // Mockea la respuesta del repositorio
-        Reserva r1 = new Reserva();
-        Reserva r2 = new Reserva();
-        when(reservaRepository.findAll()).thenReturn(List.of(r1, r2));
-
-        // Ejecuta el método
-        List<Reserva> resultado = reservaService.getAll();
-
-        // Validaciones
-        assertNotNull(resultado);
-        assertEquals(2, resultado.size());
-        verify(reservaRepository, times(1)).findAll();
-    }
-
-    @Test
-    void get_DeberiaRetornarReservaCuandoExiste() {
-        Reserva reserva = new Reserva();
-        reserva.setId(1L);
+    void cancelarReserva_DeberiaCambiarEstadoACancelado() {
         when(reservaRepository.findById(1L)).thenReturn(Optional.of(reserva));
+        when(reservaRepository.save(any(Reserva.class))).thenReturn(reserva);
 
-        Reserva resultado = reservaService.get(1L);
+        ReservaGetDTO result = reservaService.cancelarReserva(1L);
 
-        assertNotNull(resultado);
-        assertEquals(1L, resultado.getId());
-        verify(reservaRepository, times(1)).findById(1L);
-    }
-
-    @Test
-    void get_DeberiaLanzarExcepcionCuandoNoExiste() {
-        when(reservaRepository.findById(99L)).thenReturn(Optional.empty());
-
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> {
-            reservaService.get(99L);
-        });
-
-        assertEquals("No existe reserva con ese id", ex.getMessage());
-        verify(reservaRepository, times(1)).findById(99L);
-    }
-
-    @Test
-    void cancelarReserva_DeberiaCancelarYRestablecerStock() {
-        // 🔹 Producto en la reserva
-        producto = new Producto();
-        producto.setId(1L);
-        producto.setNombre("Producto A");
-
-        // 🔹 Reserva existente con estado distinto de "cancelado"
-        Reserva reserva = new Reserva();
-        reserva.setId(1L);
-        reserva.setEstado("confirmada");
-        reserva.setProductos(List.of(producto));
-
-        // 🔹 Mock: get(id)
-        when(reservaRepository.findById(1L)).thenReturn(Optional.of(reserva));
-
-        // 🔹 Mock: productoService.get(productoId)
-        when(productoService.get(1L)).thenReturn(producto);
-
-        // 🔹 Mock: evitar lógica real del stock
-        doNothing().when(reservaService).restablecerStock(any(Producto.class));
-
-        // 🔹 Mock: guardar reserva
-        when(reservaRepository.save(any(Reserva.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        // Ejecuta el método
-        Reserva resultado = reservaService.cancelarReserva(1L);
-
-        // ✅ Validaciones
-        assertEquals("cancelado", resultado.getEstado());
-        verify(reservaService, times(1)).restablecerStock(producto);
-        verify(reservaRepository, times(1)).save(reserva);
+        assertEquals("cancelado", result.getEstadoActual());
+        verify(productoService).restablecerStock(producto, 2);
     }
 
     @Test
     void cancelarReserva_DeberiaLanzarExcepcionSiYaEstaCancelada() {
-        // 🔹 Reserva ya cancelada
-        Reserva reserva = new Reserva();
-        reserva.setId(1L);
         reserva.setEstado("cancelado");
-
         when(reservaRepository.findById(1L)).thenReturn(Optional.of(reserva));
 
-        // Ejecuta y valida excepción
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> {
-            reservaService.cancelarReserva(1L);
-        });
-
-        assertEquals("La reserva ya se encuentra cancelada", ex.getMessage());
-
-        // Verifica que NO se haya guardado ni modificado stock
-        verify(reservaRepository, never()).save(any());
-        verify(productoService, never()).restablecerStock(any());
+        assertThrows(IllegalArgumentException.class, () -> reservaService.cancelarReserva(1L));
     }
 
     @Test
-    void restablecerStock_DeberiaLlamarAlServicioDeProducto() {
-        producto = new Producto();
-        producto.setId(1L);
+    void eliminar_DeberiaEliminarSiExiste() {
+        // Simulamos que la reserva existe
+        Reserva reservaMock = new Reserva();
+        reservaMock.setId(1L);
 
-        reservaService.restablecerStock(producto);
+        when(reservaRepository.findById(1L)).thenReturn(Optional.of(reservaMock));
 
-        verify(productoService, times(1)).restablecerStock(producto);
+        reservaService.eliminar(1L);
+
+        verify(reservaRepository).deleteById(1L);
     }
 
     @Test
-    void calcularPrecioTotalReserva_DeberiaRetornarTotalCorrecto() {
-        // 🔹 Simula un producto con precio por hora
-        producto = new Producto();
-        producto.setId(1L);
-        producto.setPrecioHora(BigDecimal.valueOf(100));
+    void eliminar_DeberiaLanzarExcepcionSiNoExiste() {
+        // Simulamos que findById devuelve vacío
+        when(reservaRepository.findById(1L)).thenReturn(Optional.empty());
 
-        // 🔹 Reserva de 5 horas con ese producto
-        Reserva reserva = new Reserva();
-        reserva.setProductos(List.of(producto));
-        reserva.setFechaInicio(LocalDateTime.now());
-        reserva.setFechaFin(reserva.getFechaInicio().plusHours(5));
+        // Verificamos que lance la excepción
+        assertThrows(IllegalArgumentException.class, () -> reservaService.eliminar(1L));
 
-        // 🔹 Mock: obtener el producto desde el service
-        when(productoService.get(1L)).thenReturn(producto);
+        // Y que nunca se intente eliminar
+        verify(reservaRepository, never()).deleteById(anyLong());
+    }
 
-        // Ejecuta el cálculo
+    @Test
+    void calcularPrecioTotalReserva_DeberiaMultiplicarHorasYPrecio() {
+        when(productoService.get(1L)).thenReturn(productoGetDTO);
+
         BigDecimal total = reservaService.calcularPrecioTotalReserva(reserva);
 
-        // ✅ 100 * 5 = 500
-        assertEquals(BigDecimal.valueOf(500), total);
-        verify(productoService, times(1)).get(1L);
+        assertEquals(BigDecimal.valueOf(200), total); // 2h * 50 * 2 unidades
     }
 
     @Test
-    void getEstadoActual_DeberiaCalcularSegunFechas() {
-        Reserva reserva = new Reserva();
-        reserva.setFechaInicio(LocalDateTime.now().plusDays(1));
-        reserva.setFechaFin(LocalDateTime.now().plusDays(2));
+    void getAll_DeberiaRetornarListaDeReservas() {
+        when(reservaRepository.findAll()).thenReturn(List.of(reserva));
 
-        assertEquals("reservado", reserva.getEstadoActual());
+        List<ReservaGetDTO> result = reservaService.getAll();
 
-        reserva.setFechaInicio(LocalDateTime.now().minusDays(1));
-        reserva.setFechaFin(LocalDateTime.now().plusDays(1));
-        assertEquals("en curso", reserva.getEstadoActual());
-
-        reserva.setFechaInicio(LocalDateTime.now().minusDays(3));
-        reserva.setFechaFin(LocalDateTime.now().minusDays(1));
-        assertEquals("devuelto", reserva.getEstadoActual());
-
-        reserva.setFechaInicio(null);
-        reserva.setFechaFin(null);
-        assertEquals("reservado", reserva.getEstadoActual());
+        assertEquals(1, result.size());
+        assertEquals("en curso", result.get(0).getEstadoActual());
     }
 
+    @Test
+    void get_DeberiaRetornarReserva() {
+        when(reservaRepository.findById(1L)).thenReturn(Optional.of(reserva));
+
+        ReservaGetDTO result = reservaService.get(1L);
+
+        assertEquals("en curso", result.getEstadoActual());
+        assertEquals("1122334455", result.getTelefonoCliente());
+    }
+
+    @Test
+    void get_DeberiaLanzarExcepcionSiNoExiste() {
+        when(reservaRepository.findById(1L)).thenReturn(Optional.empty());
+        assertThrows(IllegalArgumentException.class, () -> reservaService.get(1L));
+    }
+
+    @Test
+    void crear_DeberiaLanzarExcepcionSiStockInsuficiente() {
+        producto.setStockDisponible(1);
+        when(productoService.getEntity(1L)).thenReturn(producto);
+
+        assertThrows(IllegalArgumentException.class, () -> reservaService.crear(crearDTO));
+    }
 }

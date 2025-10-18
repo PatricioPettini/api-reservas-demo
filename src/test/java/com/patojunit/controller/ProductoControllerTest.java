@@ -1,7 +1,9 @@
 package com.patojunit.controller;
 
-import com.patojunit.model.Producto;
+import com.patojunit.dto.request.ProductoCrearEditarDTO;
+import com.patojunit.dto.response.ProductoGetDTO;
 import com.patojunit.service.IProductoService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -9,13 +11,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 class ProductoControllerTest {
@@ -26,145 +27,85 @@ class ProductoControllerTest {
     @InjectMocks
     private ProductoController productoController;
 
+    private ProductoGetDTO productoGet;
+    private ProductoCrearEditarDTO crearEditar;
+
+    @BeforeEach
+    void setUp() {
+        productoGet = new ProductoGetDTO();
+        productoGet.setId(1L);
+        productoGet.setNombre("carpa");
+        productoGet.setPrecioHora(BigDecimal.valueOf(100));
+        productoGet.setStockDisponible(10);
+
+        crearEditar = new ProductoCrearEditarDTO();
+        crearEditar.setNombre("reposera");
+        crearEditar.setPrecioHora(BigDecimal.valueOf(100));
+        crearEditar.setStockDisponible(10);
+    }
+
     @Test
-    void getAllProductos_DeberiaRetornarListaDeProductos() {
-        // 🔹 Datos simulados
-        Producto p1 = new Producto();
-        p1.setId(1L);
-        p1.setNombre("sombrilla");
+    void getAllProductos_devuelveLista() {
+        when(productoService.getAll()).thenReturn(List.of(productoGet));
 
-        Producto p2 = new Producto();
-        p2.setId(2L);
-        p2.setNombre("carpa");
+        var result = productoController.getAllProductos();
 
-        List<Producto> productos = Arrays.asList(p1, p2);
-
-        // 🔹 Mock del servicio
-        when(productoService.getAll()).thenReturn(productos);
-
-        // 🔹 Llamada al controlador
-        List<Producto> resultado = productoController.getAllProductos();
-
-        // 🔹 Verificaciones
-        assertEquals(2, resultado.size());
-        assertEquals("sombrilla", resultado.get(0).getNombre());
-        assertEquals("carpa", resultado.get(1).getNombre());
+        assertEquals(1, result.size());
+        assertEquals("carpa", result.get(0).getNombre());
         verify(productoService, times(1)).getAll();
     }
 
     @Test
-    void getProducto_DeberiaRetornarProductoPorId() {
-        // 🔹 Datos simulados
-        Producto producto = new Producto();
-        producto.setId(1L);
-        producto.setNombre("carpa");
+    void getProducto_porId_devuelveDTO() {
+        when(productoService.get(1L)).thenReturn(productoGet);
 
-        // 🔹 Mock del servicio
-        when(productoService.get(1L)).thenReturn(producto);
+        var result = productoController.getProducto(1L);
 
-        // 🔹 Llamada al controlador
-        Producto resultado = productoController.getProducto(1L);
-
-        // 🔹 Verificaciones
-        assertNotNull(resultado);
-        assertEquals("carpa", resultado.getNombre());
-        assertEquals(1L, resultado.getId());
-        verify(productoService, times(1)).get(1L);
+        assertEquals("carpa", result.getNombre());
+        verify(productoService).get(1L);
     }
 
     @Test
-    void getStockProducto_DeberiaRetornarStockDelProducto() {
-        // 🔹 Datos simulados
-        Long id = 1L;
-        int stockEsperado = 15;
+    void getStockProducto_devuelveEntero() {
+        when(productoService.getStock(1L)).thenReturn(7);
 
-        // 🔹 Mock del servicio
-        when(productoService.getStock(id)).thenReturn(stockEsperado);
+        int stock = productoController.getStockProducto(1L);
 
-        // 🔹 Llamada al controlador
-        int resultado = productoController.getStockProducto(id);
-
-        // 🔹 Verificaciones
-        assertEquals(stockEsperado, resultado);
-        verify(productoService, times(1)).getStock(id);
+        assertEquals(7, stock);
+        verify(productoService).getStock(1L);
     }
 
     @Test
-    void crearProducto_DeberiaRetornarProductoCreado() {
-        // 🔹 Datos simulados
-        Producto producto = new Producto();
-        producto.setNombre("sombrilla");
-        producto.setPrecioHora(new BigDecimal("250.00"));
-        producto.setStockDisponible(10);
-        producto.setCantidadReservada(0);
+    void crearProducto_invocaServicioYDevuelveDTO() {
+        when(productoService.crear(any(ProductoCrearEditarDTO.class))).thenReturn(productoGet);
 
-        // 🔹 Mock del servicio (simula que devuelve el mismo producto con un ID)
-        Producto productoCreado = new Producto();
-        productoCreado.setId(1L);
-        productoCreado.setNombre("sombrilla");
-        productoCreado.setPrecioHora(new BigDecimal("250.00"));
-        productoCreado.setStockDisponible(10);
-        productoCreado.setCantidadReservada(0);
+        var creado = productoController.crearProducto(crearEditar);
 
-        when(productoService.crear(producto)).thenReturn(productoCreado);
-
-        // 🔹 Llamada al controlador
-        Producto resultado = productoController.crearProducto(producto);
-
-        // 🔹 Verificaciones
-        assertNotNull(resultado);
-        assertEquals(1L, resultado.getId());
-        assertEquals("sombrilla", resultado.getNombre());
-        verify(productoService, times(1)).crear(producto);
+        assertEquals("carpa", creado.getNombre());
+        verify(productoService).crear(any(ProductoCrearEditarDTO.class));
     }
 
     @Test
-    void eliminarProducto_DeberiaRetornarMensajeDeExito() {
-        // 🔹 ID a eliminar
-        Long id = 1L;
+    void editarProducto_invocaServicioYDevuelveDTO() {
+        var editado = new ProductoGetDTO();
+        editado.setId(1L);
+        editado.setNombre("reposera");
+        editado.setPrecioHora(BigDecimal.valueOf(120));
+        editado.setStockDisponible(8);
 
-        // 🔹 No hace falta devolver nada, solo verificar la llamada
-        doNothing().when(productoService).eliminar(id);
+        when(productoService.editar(eq(1L), any(ProductoCrearEditarDTO.class))).thenReturn(editado);
 
-        // 🔹 Llamada al controlador
-        String resultado = productoController.eliminarProducto(id);
+        var result = productoController.editarProducto(1L, crearEditar);
 
-        // 🔹 Verificaciones
-        assertEquals("producto eliminado!", resultado);
-        verify(productoService, times(1)).eliminar(id);
+        assertEquals("reposera", result.getNombre());
+        verify(productoService).editar(eq(1L), any(ProductoCrearEditarDTO.class));
     }
 
     @Test
-    void editarProducto_DeberiaRetornarProductoEditado() {
-        // 🔹 Datos simulados
-        Long id = 1L;
+    void eliminarProducto_devuelveMensajeYLlamaAlServicio() {
+        String msg = productoController.eliminarProducto(1L);
 
-        Producto productoOriginal = new Producto();
-        productoOriginal.setId(id);
-        productoOriginal.setNombre("sombrilla");
-        productoOriginal.setPrecioHora(new BigDecimal("200.00"));
-        productoOriginal.setStockDisponible(10);
-        productoOriginal.setCantidadReservada(2);
-
-        Producto productoEditado = new Producto();
-        productoEditado.setId(id);
-        productoEditado.setNombre("sombrilla premium");
-        productoEditado.setPrecioHora(new BigDecimal("300.00"));
-        productoEditado.setStockDisponible(8);
-        productoEditado.setCantidadReservada(2);
-
-        // 🔹 Mock del servicio (simula la edición)
-        when(productoService.editar(id, productoOriginal)).thenReturn(productoEditado);
-
-        // 🔹 Llamada al controlador
-        Producto resultado = productoController.editarProducto(id, productoOriginal);
-
-        // 🔹 Verificaciones
-        assertNotNull(resultado);
-        assertEquals("sombrilla premium", resultado.getNombre());
-        assertEquals(new BigDecimal("300.00"), resultado.getPrecioHora());
-        assertEquals(8, resultado.getStockDisponible());
-        verify(productoService, times(1)).editar(id, productoOriginal);
+        assertEquals("producto eliminado!", msg);
+        verify(productoService).eliminar(1L);
     }
-
 }

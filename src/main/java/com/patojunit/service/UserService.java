@@ -40,8 +40,6 @@ public class UserService implements IUserService {
         save(userSec);
     }
 
-
-    //agregamos el método encript password en UserService
     @Override
     public String encriptPassword(String password) {
         return new BCryptPasswordEncoder().encode(password);
