@@ -2,8 +2,8 @@ package com.patojunit.controller;
 
 import com.patojunit.model.Permission;
 import com.patojunit.model.Role;
-import com.patojunit.service.IPermissionService;
-import com.patojunit.service.IRoleService;
+import com.patojunit.service.interfaces.IPermissionService;
+import com.patojunit.service.interfaces.IRoleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -43,11 +43,9 @@ public class RoleController {
         Set<Permission> permiList = new HashSet<>();
         Permission readPermission;
 
-        // Recuperar la Permission/s por su ID
         for (Permission per : role.getPermissionsList()) {
             readPermission = permiService.findById(per.getId()).orElse(null);
             if (readPermission != null) {
-                //si encuentro, guardo en la lista
                 permiList.add(readPermission);
             }
         }
@@ -57,7 +55,6 @@ public class RoleController {
         return ResponseEntity.ok(newRole);
     }
 
-    //Agregamos end-point de UPDATE
     @PatchMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Role> updateRole(@PathVariable Long id, @RequestBody Role role) {

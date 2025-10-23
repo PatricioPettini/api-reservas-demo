@@ -2,8 +2,8 @@ package com.patojunit.controller;
 
 import com.patojunit.model.Role;
 import com.patojunit.model.UserSec;
-import com.patojunit.service.IRoleService;
-import com.patojunit.service.IUserService;
+import com.patojunit.service.interfaces.IRoleService;
+import com.patojunit.service.interfaces.IUserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -39,8 +39,8 @@ class UserControllerTest {
         roleAdmin = new Role(1L, "ADMIN", Set.of());
         roleUser = new Role(2L, "USER", Set.of());
 
-        user1 = new UserSec(1L, "juan", "1234", true, true, true, true, Set.of(roleAdmin));
-        user2 = new UserSec(2L, "maria", "abcd", true, true, true, true, Set.of(roleUser));
+        user1 = new UserSec(1L, "juan", "1234", true, true, true, true, Set.of(roleAdmin), null);
+        user2 = new UserSec(2L, "maria", "abcd", true, true, true, true, Set.of(roleUser), null);
     }
 
     @Test
@@ -79,8 +79,8 @@ class UserControllerTest {
     @Test
     void createUser_DeberiaGuardarUsuarioConRoles() {
         // Arrange
-        UserSec newUser = new UserSec(null, "lucas", "pass", true, true, true, true, Set.of(roleAdmin));
-        UserSec savedUser = new UserSec(3L, "lucas", "hashedPass", true, true, true, true, Set.of(roleAdmin));
+        UserSec newUser = new UserSec(null, "lucas", "pass", true, true, true, true, Set.of(roleAdmin), null);
+        UserSec savedUser = new UserSec(3L, "lucas", "hashedPass", true, true, true, true, Set.of(roleAdmin), null);
 
         when(userService.encriptPassword("pass")).thenReturn("hashedPass");
         when(roleService.findById(1L)).thenReturn(Optional.of(roleAdmin));
@@ -99,7 +99,7 @@ class UserControllerTest {
 
     @Test
     void createUser_DeberiaRetornarNullSiNoHayRolesValidos() {
-        UserSec newUser = new UserSec(null, "pepe", "pass", true, true, true, true, Set.of(roleAdmin));
+        UserSec newUser = new UserSec(null, "pepe", "pass", true, true, true, true, Set.of(roleAdmin), null);
         when(userService.encriptPassword("pass")).thenReturn("hashedPass");
         when(roleService.findById(anyLong())).thenReturn(Optional.empty());
 

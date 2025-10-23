@@ -21,7 +21,6 @@ public class ProductoValidoValidator implements ConstraintValidator<ProductoVali
 
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
-// Convención: si viene null o en blanco, no fallamos acá; eso lo maneja @NotBlank/@NotNull si las usás.
         if (value == null || value.isBlank()) return true;
         return permitidas.contains(value.toLowerCase(Locale.ROOT));
     }

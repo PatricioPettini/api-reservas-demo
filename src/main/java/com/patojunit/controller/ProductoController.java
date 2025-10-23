@@ -1,8 +1,8 @@
 package com.patojunit.controller;
 
 import com.patojunit.dto.request.ProductoCrearEditarDTO;
-import com.patojunit.dto.response.ProductoGetDTO;
-import com.patojunit.service.IProductoService;
+import com.patojunit.dto.response.ProductoUserGetDTO;
+import com.patojunit.service.interfaces.IProductoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,33 +24,27 @@ public class ProductoController {
         return ("producto eliminado!");
     }
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     @GetMapping("/get")
-    public List<ProductoGetDTO> getAllProductos(){
+    public List<ProductoUserGetDTO> getAllProductos(){
         return productoService.getAll();
     }
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     @GetMapping("/get/{id}")
-    public ProductoGetDTO getProducto(@PathVariable Long id){
+    public ProductoUserGetDTO getProducto(@PathVariable Long id){
         return productoService.get(id);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/get/stock/{id}")
-    public int getStockProducto(@PathVariable Long id){
-        return productoService.getStock(id);
-    }
-
-    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/crear")
-    public ProductoGetDTO crearProducto(@Valid @RequestBody ProductoCrearEditarDTO producto){
+    public ProductoUserGetDTO crearProducto(@Valid @RequestBody ProductoCrearEditarDTO producto){
         return productoService.crear(producto);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/editar/{id}")
-    public ProductoGetDTO editarProducto(@PathVariable Long id,@Valid @RequestBody ProductoCrearEditarDTO producto){
+    public ProductoUserGetDTO editarProducto(@PathVariable Long id, @Valid @RequestBody ProductoCrearEditarDTO producto){
         return productoService.editar(id, producto);
     }
 

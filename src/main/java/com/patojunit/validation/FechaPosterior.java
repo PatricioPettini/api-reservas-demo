@@ -6,14 +6,14 @@ import java.lang.annotation.*;
 
 @Documented
 @Constraint(validatedBy = FechaPosteriorValidator.class)
-@Target(ElementType.TYPE) // porque valida el objeto completo
+@Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface FechaPosterior {
 
     String message() default "La fecha final debe ser posterior a la fecha inicial.";
 
-    String fechaInicio(); // nombre del campo de inicio
-    String fechaFin();    // nombre del campo de fin
+    String fechaInicio();
+    String fechaFin();
 
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};

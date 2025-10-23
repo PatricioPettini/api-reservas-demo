@@ -1,10 +1,10 @@
 package com.patojunit.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.patojunit.dto.AuthLoginRequestDTO;
-import com.patojunit.dto.AuthResponseDTO;
-import com.patojunit.security.config.TestSecurityConfig;
-import com.patojunit.service.UserDetailsServiceImp;
+import com.patojunit.dto.request.AuthLoginRequestDTO;
+import com.patojunit.dto.response.AuthResponseDTO;
+import com.patojunit.config.TestSecurityConfig;
+import com.patojunit.service.implementations.UserDetailsServiceImp;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,10 +35,10 @@ class AuthenticationControllerIntTest {
     void login_DeberiaRetornarOkYToken() throws Exception {
         // Arrange
         AuthResponseDTO expectedResponse = new AuthResponseDTO(
-                "juan",           // username
-                "Login exitoso",  // message
-                "token123",       // jwt
-                true              // status
+                "juan",
+                "Login exitoso",
+                "token123",
+                true
         );        Mockito.when(userDetailsService.loginUser(any(AuthLoginRequestDTO.class)))
                 .thenReturn(expectedResponse);
 

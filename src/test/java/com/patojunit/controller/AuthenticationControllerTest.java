@@ -1,8 +1,8 @@
 package com.patojunit.controller;
 
-import com.patojunit.dto.AuthLoginRequestDTO;
-import com.patojunit.dto.AuthResponseDTO;
-import com.patojunit.service.UserDetailsServiceImp;
+import com.patojunit.dto.request.AuthLoginRequestDTO;
+import com.patojunit.dto.response.AuthResponseDTO;
+import com.patojunit.service.implementations.UserDetailsServiceImp;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;

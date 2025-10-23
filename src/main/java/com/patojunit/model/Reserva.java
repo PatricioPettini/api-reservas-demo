@@ -1,5 +1,7 @@
 package com.patojunit.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.patojunit.model.enums.EstadoReserva;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -30,11 +32,15 @@ public class Reserva {
 
     private LocalDateTime fechaFin;
 
-    private String estado;
+    @Enumerated(EnumType.STRING)
+    private EstadoReserva estado = EstadoReserva.PENDIENTE;
 
     private BigDecimal precioTotal;
 
     private Boolean pagado=false;
 
-    private String telefonoCliente;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id")
+    @JsonBackReference
+    private UserSec usuario;
 }

@@ -9,7 +9,7 @@ public class FechaPosteriorValidator implements ConstraintValidator<FechaPosteri
     @Override
     public boolean isValid(ReservaCrearEditarDTO reserva, ConstraintValidatorContext context) {
         if (reserva.getFechaInicio() == null || reserva.getFechaFin() == null) {
-            return true; // evita fallar si están vacías, otras validaciones se encargan
+            return true;
         }
         return reserva.getFechaFin().isAfter(reserva.getFechaInicio());
     }

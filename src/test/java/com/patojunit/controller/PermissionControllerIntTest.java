@@ -2,8 +2,8 @@ package com.patojunit.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.patojunit.model.Permission;
-import com.patojunit.security.config.TestSecurityConfig;
-import com.patojunit.service.IPermissionService;
+import com.patojunit.config.TestSecurityConfig;
+import com.patojunit.service.interfaces.IPermissionService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;

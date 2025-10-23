@@ -3,9 +3,9 @@ package com.patojunit.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.patojunit.model.Role;
 import com.patojunit.model.UserSec;
-import com.patojunit.security.config.TestSecurityConfig;
-import com.patojunit.service.IRoleService;
-import com.patojunit.service.IUserService;
+import com.patojunit.config.TestSecurityConfig;
+import com.patojunit.service.interfaces.IRoleService;
+import com.patojunit.service.interfaces.IUserService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,8 +46,8 @@ class UserControllerIntegrationTest {
     void getAllUsers_DeberiaRetornarListaYStatusOk() throws Exception {
         Mockito.when(userService.findAll()).thenReturn(
                 Arrays.asList(
-                        new UserSec(1L, "juan", "1234", true, true, true, true, Set.of()),
-                        new UserSec(2L, "maria", "abcd", true, true, true, true, Set.of())
+                        new UserSec(1L, "juan", "1234", true, true, true, true, Set.of(), null),
+                        new UserSec(2L, "maria", "abcd", true, true, true, true, Set.of(), null)
                 )
         );
 
@@ -62,7 +62,7 @@ class UserControllerIntegrationTest {
     @WithMockUser(roles = {"ADMIN", "USER"})
     void getUserById_DeberiaRetornarOkSiExiste() throws Exception {
         Mockito.when(userService.findById(1L))
-                .thenReturn(Optional.of(new UserSec(1L, "juan", "1234", true, true, true, true, Set.of())));
+                .thenReturn(Optional.of(new UserSec(1L, "juan", "1234", true, true, true, true, Set.of(), null)));
 
         mockMvc.perform(get("/api/users/1")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -84,15 +84,15 @@ class UserControllerIntegrationTest {
     @WithMockUser(roles = "ADMIN")
     void createUser_DeberiaCrearUsuarioConRoles() throws Exception {
         Role roleAdmin = new Role(1L, "ADMIN", Set.of());
-        UserSec input = new UserSec(null, "lucas", "pass", true, true, true, true, Set.of(roleAdmin));
-        UserSec saved = new UserSec(3L, "lucas", "hashedPass", true, true, true, true, Set.of(roleAdmin));
+        UserSec input = new UserSec(null, "lucas", "pass", true, true, true, true, Set.of(roleAdmin), null);
+        UserSec saved = new UserSec(3L, "lucas", "hashedPass", true, true, true, true, Set.of(roleAdmin), null);
 
         Mockito.when(userService.encriptPassword("pass")).thenReturn("hashedPass");
         Mockito.when(roleService.findById(1L)).thenReturn(Optional.of(roleAdmin));
         Mockito.when(userService.save(any(UserSec.class))).thenReturn(saved);
 
         mockMvc.perform(post("/api/users")
-                        .with(csrf()) // ✅ necesario para POST
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(input)))
                 .andExpect(status().isOk())

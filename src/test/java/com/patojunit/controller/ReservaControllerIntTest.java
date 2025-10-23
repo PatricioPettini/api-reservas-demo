@@ -2,20 +2,27 @@ package com.patojunit.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.patojunit.dto.request.ReservaCrearEditarDTO;
-import com.patojunit.model.Reserva;
-import com.patojunit.repository.IReservaRepository;
-import org.junit.jupiter.api.BeforeEach;
+import com.patojunit.dto.response.ReservaUserGetDTO;
+import com.patojunit.service.interfaces.IReservaService;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 
+import static org.hamcrest.Matchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -27,132 +34,124 @@ class ReservaControllerIntTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private IReservaRepository reservaRepository;
-
-    @Autowired
     private ObjectMapper objectMapper;
 
-    @BeforeEach
-    void setup() {
-        reservaRepository.deleteAll();
-    }
+    @MockBean
+    private IReservaService reservaService;
 
     @Test
-    @WithMockUser(roles = "USER")
-    void crearReserva_DeberiaCrearYRetornarReserva() throws Exception {
-        ReservaCrearEditarDTO dto = new ReservaCrearEditarDTO();
-        dto.setTelefonoCliente("1122334455");
-        dto.setPagado(true);
-        dto.setFechaInicio(LocalDateTime.now().plusHours(1));
-        dto.setFechaFin(LocalDateTime.now().plusHours(3));
+    @WithMockUser(username = "user1", roles = {"USER"})
+    @DisplayName("Debe crear una reserva correctamente")
+    void crearReserva_DeberiaRetornarOk() throws Exception {
+        ReservaUserGetDTO mockResponse = new ReservaUserGetDTO();
+        mockResponse.setId(1L);
+        mockResponse.setPrecioTotal(BigDecimal.valueOf(2000));
+        mockResponse.setEstado("pendiente");
+
+        Mockito.when(reservaService.crear(any(ReservaCrearEditarDTO.class)))
+                .thenReturn(mockResponse);
+
+        ReservaCrearEditarDTO dto = new ReservaCrearEditarDTO(
+                Collections.emptyList(),
+                LocalDateTime.now().plusMinutes(5),
+                LocalDateTime.now().plusHours(1),
+                false
+        );
 
         mockMvc.perform(post("/reserva/crear")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.telefonoCliente").value("1122334455"))
-                .andExpect(jsonPath("$.estadoActual").value("reservado"));
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.precioTotal", is(2000)))
+                .andExpect(jsonPath("$.estadoActual", is("reservado")));
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
-    void getAllReservas_DeberiaRetornarLista() throws Exception {
-        // Crear una reserva en la BD
-        Reserva reserva = new Reserva();
-        reserva.setTelefonoCliente("1199887766");
-        reserva.setEstado("reservado");
-        reserva.setPagado(false);
-        reserva.setFechaInicio(LocalDateTime.now().plusHours(2));
-        reserva.setFechaFin(LocalDateTime.now().plusHours(4));
-        reserva.setPrecioTotal(BigDecimal.valueOf(300));
-        reservaRepository.save(reserva);
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @DisplayName("Debe editar una reserva correctamente")
+    void editarReserva_DeberiaEditarYRetornarOk() throws Exception {
+        ReservaUserGetDTO response = new ReservaUserGetDTO();
+        response.setId(2L);
+        response.setEstado("reservado");
 
-        mockMvc.perform(get("/reserva/get")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].telefonoCliente").value("1199887766"));
-    }
+        Mockito.when(reservaService.editar(eq(2L), any(ReservaCrearEditarDTO.class)))
+                .thenReturn(response);
 
-    @Test
-    @WithMockUser(roles = "ADMIN")
-    void getReserva_DeberiaRetornarReservaPorId() throws Exception {
-        Reserva reserva = new Reserva();
-        reserva.setTelefonoCliente("1100000000");
-        reserva.setEstado("reservado");
-        reserva.setPagado(true);
-        reserva.setFechaInicio(LocalDateTime.now().plusHours(1));
-        reserva.setFechaFin(LocalDateTime.now().plusHours(5));
-        reserva.setPrecioTotal(BigDecimal.valueOf(250));
-        reservaRepository.save(reserva);
+        ReservaCrearEditarDTO dto = new ReservaCrearEditarDTO(
+                Collections.emptyList(),
+                LocalDateTime.now().plusMinutes(5),
+                LocalDateTime.now().plusHours(1),
+                false
+        );
 
-        Long id = reservaRepository.findAll().get(0).getId();
-
-        mockMvc.perform(get("/reserva/get/" + id))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.telefonoCliente").value("1100000000"));
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMIN")
-    void editarReserva_DeberiaActualizarReserva() throws Exception {
-        Reserva reserva = new Reserva();
-        reserva.setTelefonoCliente("1111111111");
-        reserva.setEstado("reservado");
-        reserva.setPagado(true);
-        reserva.setFechaInicio(LocalDateTime.now().plusHours(2));
-        reserva.setFechaFin(LocalDateTime.now().plusHours(4));
-        reserva.setPrecioTotal(BigDecimal.valueOf(400));
-        reservaRepository.save(reserva);
-
-        Long id = reservaRepository.findAll().get(0).getId();
-
-        ReservaCrearEditarDTO dto = new ReservaCrearEditarDTO();
-        dto.setTelefonoCliente("1111111111");
-        dto.setPagado(true);
-        dto.setFechaInicio(LocalDateTime.now().plusHours(3));
-        dto.setFechaFin(LocalDateTime.now().plusHours(6));
-
-        mockMvc.perform(put("/reserva/editar/" + id)
+        mockMvc.perform(put("/reserva/editar/{id}", 2L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.estadoActual").value("reservado"));
+                .andExpect(jsonPath("$.id", is(2)))
+                .andExpect(jsonPath("$.estadoActual", is("reservado")));
     }
 
     @Test
-    @WithMockUser(roles = "USER")
-    void cancelarReserva_DeberiaCambiarEstadoACancelado() throws Exception {
-        Reserva reserva = new Reserva();
-        reserva.setTelefonoCliente("1155443322");
-        reserva.setEstado("reservado");
-        reserva.setPagado(false);
-        reserva.setFechaInicio(LocalDateTime.now().plusHours(1));
-        reserva.setFechaFin(LocalDateTime.now().plusHours(2));
-        reserva.setPrecioTotal(BigDecimal.valueOf(150));
-        reservaRepository.save(reserva);
-
-        Long id = reservaRepository.findAll().get(0).getId();
-
-        mockMvc.perform(patch("/reserva/" + id))
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @DisplayName("Debe eliminar una reserva correctamente")
+    void eliminarReserva_DeberiaEliminarYRetornarMensaje() throws Exception {
+        mockMvc.perform(delete("/reserva/eliminar/{id}", 10L))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.estadoActual").value("cancelado"));
+                .andExpect(content().string(containsString("reserva eliminada!")));
+
+        Mockito.verify(reservaService).eliminar(10L);
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
-    void eliminarReserva_DeberiaBorrarYRetornarMensaje() throws Exception {
-        Reserva reserva = new Reserva();
-        reserva.setTelefonoCliente("1166778899");
-        reserva.setEstado("reservado");
-        reserva.setPagado(false);
-        reserva.setFechaInicio(LocalDateTime.now().plusHours(1));
-        reserva.setFechaFin(LocalDateTime.now().plusHours(2));
-        reservaRepository.save(reserva);
+    @WithMockUser(username = "user1", roles = {"USER"})
+    @DisplayName("Debe eliminar productos de una reserva correctamente")
+    void eliminarProductos_DeberiaRetornarOk() throws Exception {
+        ReservaUserGetDTO response = new ReservaUserGetDTO();
+        response.setId(7L);
+        response.setEstado("reservado");
 
-        Long id = reservaRepository.findAll().get(0).getId();
+        Mockito.when(reservaService.eliminarProductos(eq(7L), any()))
+                .thenReturn(response);
 
-        mockMvc.perform(delete("/reserva/eliminar/" + id))
+        mockMvc.perform(delete("/reserva/eliminar-productos/{idReserva}", 7L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(List.of(1L, 2L))))
                 .andExpect(status().isOk())
-                .andExpect(content().string("reserva eliminada!"));
+                .andExpect(jsonPath("$.id", is(7)))
+                .andExpect(jsonPath("$.estadoActual", is("reservado")));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @DisplayName("Debe retornar lista de reservas")
+    void getAllReservas_DeberiaRetornarLista() throws Exception {
+        ReservaUserGetDTO dto = new ReservaUserGetDTO();
+        dto.setId(1L);
+        dto.setEstado("reservado");
+
+        Mockito.when(reservaService.getAll()).thenReturn(List.of(dto));
+
+        mockMvc.perform(get("/reserva/get"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].estadoActual", is("reservado")));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @DisplayName("Debe retornar una reserva por ID")
+    void getReserva_DeberiaRetornarUna() throws Exception {
+        ReservaUserGetDTO dto = new ReservaUserGetDTO();
+        dto.setId(5L);
+        dto.setEstado("reservado");
+
+        Mockito.when(reservaService.get(5L)).thenReturn(dto);
+
+        mockMvc.perform(get("/reserva/get/{id}", 5L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(5)))
+                .andExpect(jsonPath("$.estadoActual", is("reservado")));
     }
 }

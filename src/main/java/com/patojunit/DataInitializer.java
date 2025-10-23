@@ -14,7 +14,7 @@ import java.util.Collections;
 import java.util.Set;
 
 @Component
-@Profile("!test")  // evita que corra durante los tests
+@Profile("!test")
 @Transactional
 public class DataInitializer implements CommandLineRunner {
 
@@ -31,7 +31,6 @@ public class DataInitializer implements CommandLineRunner {
 
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
-        // ✅ 1) Crear o reutilizar roles gestionados por el EntityManager
         Role adminRole = roleRepository.findByName("ADMIN")
                 .orElseGet(() -> {
                     Role role = new Role();
@@ -46,8 +45,7 @@ public class DataInitializer implements CommandLineRunner {
                     return roleRepository.save(role);
                 });
 
-        // ✅ 2) Crear usuarios si no existen
-        userRepository.findUserEntityByUsername("admin").orElseGet(() -> {
+        userRepository.findByUsername("admin").orElseGet(() -> {
             UserSec admin = new UserSec();
             admin.setUsername("admin");
             admin.setPassword(encoder.encode("admin_1234"));
@@ -59,7 +57,7 @@ public class DataInitializer implements CommandLineRunner {
             return userRepository.save(admin);
         });
 
-        userRepository.findUserEntityByUsername("user").orElseGet(() -> {
+        userRepository.findByUsername("user").orElseGet(() -> {
             UserSec user = new UserSec();
             user.setUsername("user");
             user.setPassword(encoder.encode("user_123"));

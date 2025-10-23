@@ -1,7 +1,7 @@
 package com.patojunit.controller;
 
 import com.patojunit.model.Permission;
-import com.patojunit.service.IPermissionService;
+import com.patojunit.service.interfaces.IPermissionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;

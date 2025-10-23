@@ -1,8 +1,8 @@
 package com.patojunit.controller;
 
-import com.patojunit.dto.AuthLoginRequestDTO;
-import com.patojunit.dto.AuthResponseDTO;
-import com.patojunit.service.UserDetailsServiceImp;
+import com.patojunit.dto.request.AuthLoginRequestDTO;
+import com.patojunit.dto.response.AuthResponseDTO;
+import com.patojunit.service.implementations.UserDetailsServiceImp;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +16,6 @@ public class AuthenticationController {
 
     private final UserDetailsServiceImp userDetailsService;
 
-    //Todas estas requests y responses vamos a tratarlas como dto
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDTO> login(@RequestBody @Valid AuthLoginRequestDTO userRequest) {
         return new ResponseEntity<>(this.userDetailsService.loginUser(userRequest), HttpStatus.OK);

@@ -21,8 +21,6 @@ public class Role {
     private Long id;
     private String name;
 
-    //Usamos Set porque no permite repetidos
-    //List permite repetidos
     @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinTable (name = "roles_permissions", joinColumns = @JoinColumn(name = "role_id"),
             inverseJoinColumns=@JoinColumn(name = "permission_id"))

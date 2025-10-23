@@ -2,8 +2,8 @@ package com.patojunit.controller;
 
 import com.patojunit.model.Permission;
 import com.patojunit.model.Role;
-import com.patojunit.service.IPermissionService;
-import com.patojunit.service.IRoleService;
+import com.patojunit.service.interfaces.IPermissionService;
+import com.patojunit.service.interfaces.IRoleService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;

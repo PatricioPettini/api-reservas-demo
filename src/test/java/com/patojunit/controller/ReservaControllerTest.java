@@ -1,25 +1,22 @@
 package com.patojunit.controller;
 
 import com.patojunit.dto.request.ReservaCrearEditarDTO;
-import com.patojunit.dto.response.ReservaGetDTO;
-import com.patojunit.service.IReservaService;
+import com.patojunit.dto.response.ReservaUserGetDTO;
+import com.patojunit.service.interfaces.IReservaService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockitoAnnotations;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 class ReservaControllerTest {
 
     @Mock
@@ -28,100 +25,93 @@ class ReservaControllerTest {
     @InjectMocks
     private ReservaController reservaController;
 
-    private ReservaGetDTO reservaGet;
-    private ReservaCrearEditarDTO crearEditar;
+    private ReservaUserGetDTO dtoResponse;
 
     @BeforeEach
     void setUp() {
-        reservaGet = new ReservaGetDTO();
-        reservaGet.setId(1L);
-        reservaGet.setCodigoReserva("RES-12345-ABCD");
-        reservaGet.setTelefonoCliente("1122334455");
-        reservaGet.setEstado("reservado");
-        reservaGet.setPagado(true);
-        reservaGet.setPrecioTotal(BigDecimal.valueOf(500));
-        reservaGet.setFechaInicio(LocalDateTime.now());
-        reservaGet.setFechaFin(LocalDateTime.now().plusHours(2));
+        MockitoAnnotations.openMocks(this);
 
-        crearEditar = new ReservaCrearEditarDTO();
-        crearEditar.setTelefonoCliente("1122334455");
-        crearEditar.setPagado(true);
-        crearEditar.setFechaInicio(LocalDateTime.now());
-        crearEditar.setFechaFin(LocalDateTime.now().plusHours(2));
+        dtoResponse = new ReservaUserGetDTO();
+        dtoResponse.setId(1L);
     }
 
     @Test
-    void getAllReservas_deberiaRetornarLista() {
-        when(reservaService.getAll()).thenReturn(List.of(reservaGet));
+    @DisplayName("crearReserva() debe delegar en el servicio y retornar DTO")
+    void crearReserva_DeberiaDelegarYRetornarDTO() {
+        when(reservaService.crear(any(ReservaCrearEditarDTO.class))).thenReturn(dtoResponse);
 
-        var result = reservaController.getAllReservas();
+        ReservaCrearEditarDTO dto = new ReservaCrearEditarDTO(List.of(), null, null, false);
+        ReservaUserGetDTO result = reservaController.crearReserva(dto);
 
-        assertEquals(1, result.size());
-        assertEquals("RES-12345-ABCD", result.get(0).getCodigoReserva());
-        verify(reservaService, times(1)).getAll();
+        assertThat(result).isEqualTo(dtoResponse);
+        verify(reservaService).crear(dto);
     }
 
     @Test
-    void getReserva_porId_deberiaRetornarDTO() {
-        when(reservaService.get(1L)).thenReturn(reservaGet);
+    @DisplayName("editarReserva() debe delegar en el servicio y retornar DTO actualizado")
+    void editarReserva_DeberiaEditarYRetornarDTO() {
+        when(reservaService.editar(eq(5L), any(ReservaCrearEditarDTO.class))).thenReturn(dtoResponse);
 
-        var result = reservaController.getReserva(1L);
+        ReservaCrearEditarDTO dto = new ReservaCrearEditarDTO(List.of(), null, null, false);
+        ReservaUserGetDTO result = reservaController.editarReserva(5L, dto);
 
-        assertEquals("en curso", result.getEstadoActual());
-        assertEquals("1122334455", result.getTelefonoCliente());
-        verify(reservaService, times(1)).get(1L);
+        assertThat(result).isEqualTo(dtoResponse);
+        verify(reservaService).editar(5L, dto);
     }
 
     @Test
-    void crearReserva_deberiaRetornarReservaCreada() {
-        when(reservaService.crear(any(ReservaCrearEditarDTO.class))).thenReturn(reservaGet);
+    @DisplayName("cancelarReserva() debe delegar en el servicio y retornar DTO cancelado")
+    void cancelarReserva_DeberiaCancelarYRetornarDTO() {
+        when(reservaService.cancelarReserva(7L)).thenReturn(dtoResponse);
 
-        var result = reservaController.crearReserva(crearEditar);
+        ReservaUserGetDTO result = reservaController.cancelarReserva(7L);
 
-        assertEquals("en curso", result.getEstadoActual());
-        assertEquals(BigDecimal.valueOf(500), result.getPrecioTotal());
-        verify(reservaService, times(1)).crear(any(ReservaCrearEditarDTO.class));
+        assertThat(result).isEqualTo(dtoResponse);
+        verify(reservaService).cancelarReserva(7L);
     }
 
     @Test
-    void editarReserva_deberiaRetornarReservaEditada() {
-        ReservaGetDTO editada = new ReservaGetDTO();
-        editada.setId(1L);
-        editada.setEstado("devuelto");
-        editada.setFechaInicio(LocalDateTime.now().plusHours(-3));
-        editada.setFechaFin(LocalDateTime.now().plusHours(-2));
-        editada.setTelefonoCliente("1199887766");
-        editada.setPrecioTotal(BigDecimal.valueOf(300));
+    @DisplayName("eliminarReserva() debe eliminar la reserva y retornar mensaje")
+    void eliminarReserva_DeberiaEliminarYRetornarMensaje() {
+        doNothing().when(reservaService).eliminar(10L);
 
-        when(reservaService.editar(eq(1L), any(ReservaCrearEditarDTO.class))).thenReturn(editada);
+        String result = reservaController.eliminarReserva(10L);
 
-        var result = reservaController.editarReserva(1L, crearEditar);
-
-        assertEquals("devuelto", result.getEstadoActual());
-        assertEquals("1199887766", result.getTelefonoCliente());
-        verify(reservaService, times(1)).editar(eq(1L), any(ReservaCrearEditarDTO.class));
+        assertThat(result).isEqualTo("reserva eliminada!");
+        verify(reservaService).eliminar(10L);
     }
 
     @Test
-    void cancelarReserva_deberiaRetornarReservaCancelada() {
-        ReservaGetDTO cancelada = new ReservaGetDTO();
-        cancelada.setId(1L);
-        cancelada.setEstado("cancelado");
-        cancelada.setTelefonoCliente("1122334455");
+    @DisplayName("getAllReservas() debe retornar lista de reservas")
+    void getAllReservas_DeberiaRetornarLista() {
+        when(reservaService.getAll()).thenReturn(List.of(dtoResponse));
 
-        when(reservaService.cancelarReserva(1L)).thenReturn(cancelada);
+        List<ReservaUserGetDTO> result = reservaController.getAllReservas();
 
-        var result = reservaController.cancelarReserva(1L);
-
-        assertEquals("cancelado", result.getEstadoActual());
-        verify(reservaService, times(1)).cancelarReserva(1L);
+        assertThat(result).hasSize(1).contains(dtoResponse);
+        verify(reservaService).getAll();
     }
 
     @Test
-    void eliminarReserva_deberiaRetornarMensajeYEliminar() {
-        String mensaje = reservaController.eliminarReserva(1L);
+    @DisplayName("getReserva() debe retornar reserva específica")
+    void getReserva_DeberiaRetornarDTO() {
+        when(reservaService.get(3L)).thenReturn(dtoResponse);
 
-        assertEquals("reserva eliminada!", mensaje);
-        verify(reservaService, times(1)).eliminar(1L);
+        ReservaUserGetDTO result = reservaController.getReserva(3L);
+
+        assertThat(result).isEqualTo(dtoResponse);
+        verify(reservaService).get(3L);
+    }
+
+    @Test
+    @DisplayName("eliminarProducto() debe delegar en el servicio con IDs correctos")
+    void eliminarProducto_DeberiaEliminarProductosCorrectamente() {
+        List<Long> productos = List.of(1L, 2L, 3L);
+        when(reservaService.eliminarProductos(8L, productos)).thenReturn(dtoResponse);
+
+        ReservaUserGetDTO result = reservaController.eliminarProducto(8L, productos);
+
+        assertThat(result).isEqualTo(dtoResponse);
+        verify(reservaService).eliminarProductos(8L, productos);
     }
 }

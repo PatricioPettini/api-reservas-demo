@@ -2,8 +2,8 @@ package com.patojunit.controller;
 
 import com.patojunit.model.Role;
 import com.patojunit.model.UserSec;
-import com.patojunit.service.IRoleService;
-import com.patojunit.service.IUserService;
+import com.patojunit.service.interfaces.IRoleService;
+import com.patojunit.service.interfaces.IUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -44,14 +44,11 @@ public class UserController {
         Set<Role> roleList = new HashSet<>();
         Role readRole;
 
-        //encriptamos contraseña
         userSec.setPassword(userService.encriptPassword(userSec.getPassword()));
 
-        // Recuperar la Permission/s por su ID
         for (Role role : userSec.getRolesList()){
             readRole = roleService.findById(role.getId()).orElse(null);
             if (readRole != null) {
-                //si encuentro, guardo en la lista
                 roleList.add(readRole);
             }
         }

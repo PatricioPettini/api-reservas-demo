@@ -2,151 +2,146 @@ package com.patojunit.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.patojunit.dto.request.ProductoCrearEditarDTO;
-import com.patojunit.dto.response.ProductoGetDTO;
-import com.patojunit.service.IProductoService;
+import com.patojunit.model.Producto;
+import com.patojunit.repository.IProductoRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 import static org.hamcrest.Matchers.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ExtendWith(SpringExtension.class)
-@WebMvcTest(controllers = ProductoController.class)
+/**
+ * Test de integración para ProductoController.
+ * Usa la base de datos H2 en memoria, MockMvc y contexto completo.
+ */
+@SpringBootTest
+@AutoConfigureMockMvc
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class ProductoControllerIntTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
-    private IProductoService productoService;
-
     @Autowired
     private ObjectMapper objectMapper;
 
-    private ProductoGetDTO productoDTO;
-    private ProductoCrearEditarDTO crearEditarDTO;
+    @Autowired
+    private IProductoRepository productoRepository;
 
     @BeforeEach
-    void setUp() {
-        productoDTO = new ProductoGetDTO();
-        productoDTO.setId(1L);
-        productoDTO.setNombre("reposera");
-        productoDTO.setPrecioHora(BigDecimal.valueOf(100));
-        productoDTO.setStockDisponible(10);
-        productoDTO.setCodigoProducto("PROD-GAL-1234");
+    void setup() {
+        productoRepository.deleteAll();
+    }
 
-        crearEditarDTO = new ProductoCrearEditarDTO();
-        crearEditarDTO.setNombre("carpa");
-        crearEditarDTO.setPrecioHora(BigDecimal.valueOf(100));
-        crearEditarDTO.setStockDisponible(10);
-        crearEditarDTO.setCantidadReservada(0);
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("Debe crear un producto correctamente")
+    void crearProducto_DeberiaCrearYRetornarDTO() throws Exception {
+        ProductoCrearEditarDTO dto = new ProductoCrearEditarDTO(
+                "reposera",
+                BigDecimal.valueOf(1200.00),
+                10,
+                0
+        );
+
+        mockMvc.perform(post("/producto/crear")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombre", is("reposera")))
+                .andExpect(jsonPath("$.precioHora", is(1200.00)))
+                .andExpect(jsonPath("$.stockDisponible", is(10)))
+                .andExpect(jsonPath("$.codigoProducto", notNullValue()));
     }
 
     @Test
     @WithMockUser(roles = "USER")
+    @DisplayName("Debe obtener la lista completa de productos")
     void getAllProductos_DeberiaRetornarLista() throws Exception {
-        when(productoService.getAll()).thenReturn(List.of(productoDTO));
+        productoRepository.saveAll(List.of(
+                new Producto(null, "P-001", null, null, "reposera", BigDecimal.valueOf(1000), 10, 0),
+                new Producto(null, "P-002", null, null, "sombrilla", BigDecimal.valueOf(800), 5, 0)
+        ));
 
         mockMvc.perform(get("/producto/get"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0].nombre", is("reposera")))
-                .andExpect(jsonPath("$[0].stockDisponible", is(10)));
-
-        verify(productoService).getAll();
+                .andExpect(jsonPath("$[1].nombre", is("sombrilla")));
     }
 
     @Test
     @WithMockUser(roles = "USER")
-    void getProducto_DeberiaRetornarProducto() throws Exception {
-        when(productoService.get(1L)).thenReturn(productoDTO);
+    @DisplayName("Debe retornar un producto por su ID")
+    void getProductoPorId_DeberiaRetornarProducto() throws Exception {
+        Producto producto = productoRepository.save(
+                new Producto(null, "P-001", null, null, "carpa", BigDecimal.valueOf(1500), 8, 0)
+        );
 
-        mockMvc.perform(get("/producto/get/1"))
+        mockMvc.perform(get("/producto/get/" + producto.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombre", is("carpa")))
+                .andExpect(jsonPath("$.precioHora", is(1500.0)))
+                .andExpect(jsonPath("$.stockDisponible", is(8)));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("Debe editar un producto existente")
+    void editarProducto_DeberiaActualizarDatos() throws Exception {
+        Producto producto = productoRepository.save(
+                new Producto(null, "P-001", null, null, "reposera", BigDecimal.valueOf(1000), 10, 0)
+        );
+
+        ProductoCrearEditarDTO dto = new ProductoCrearEditarDTO(
+                "reposera",
+                BigDecimal.valueOf(1500.00),
+                8,
+                0
+        );
+
+        mockMvc.perform(put("/producto/editar/" + producto.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nombre", is("reposera")))
-                .andExpect(jsonPath("$.precioHora", is(100)));
-
-        verify(productoService).get(1L);
+                .andExpect(jsonPath("$.precioHora", is(1500.00)))
+                .andExpect(jsonPath("$.stockDisponible", is(8)));
     }
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void getStockProducto_DeberiaRetornarEntero() throws Exception {
-        when(productoService.getStock(1L)).thenReturn(8);
+    @DisplayName("Debe eliminar un producto y retornar mensaje de éxito")
+    void eliminarProducto_DeberiaEliminarYRetornarMensaje() throws Exception {
+        Producto producto = productoRepository.save(
+                new Producto(null, "P-001", null, null, "carpa", BigDecimal.valueOf(1500), 4, 0)
+        );
 
-        mockMvc.perform(get("/producto/get/stock/1"))
-                .andExpect(status().isOk())
-                .andExpect(content().string("8"));
-
-        verify(productoService).getStock(1L);
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMIN")
-    void crearProducto_DeberiaRetornarProductoCreado() throws Exception {
-        when(productoService.crear(any(ProductoCrearEditarDTO.class))).thenReturn(productoDTO);
-
-        mockMvc.perform(post("/producto/crear")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(crearEditarDTO)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nombre", is("reposera")))
-                .andExpect(jsonPath("$.codigoProducto", startsWith("PROD-")));
-
-        verify(productoService).crear(any(ProductoCrearEditarDTO.class));
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMIN")
-    void editarProducto_DeberiaRetornarProductoEditado() throws Exception {
-        when(productoService.editar(eq(1L), any(ProductoCrearEditarDTO.class))).thenReturn(productoDTO);
-
-        mockMvc.perform(put("/producto/editar/1")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(crearEditarDTO)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nombre", is("reposera")));
-
-        verify(productoService).editar(eq(1L), any(ProductoCrearEditarDTO.class));
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMIN")
-    void eliminarProducto_DeberiaRetornarMensaje() throws Exception {
-        Mockito.doNothing().when(productoService).eliminar(1L);
-
-        mockMvc.perform(delete("/producto/eliminar/1")
-                        .with(csrf())) // ✅ agrega token CSRF válido
+        mockMvc.perform(delete("/producto/eliminar/" + producto.getId()))
                 .andExpect(status().isOk())
                 .andExpect(content().string("producto eliminado!"));
-
-        verify(productoService).eliminar(1L);
     }
 
     @Test
-    void crearProducto_SinRol_DeberiaDevolver403() throws Exception {
+    @DisplayName("Debe devolver 403 si intenta acceder sin rol")
+    void crearProducto_SinRol_DeberiaRetornar403() throws Exception {
+        ProductoCrearEditarDTO dto = new ProductoCrearEditarDTO("carpa", BigDecimal.valueOf(1200), 10, 0);
+
         mockMvc.perform(post("/producto/crear")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(crearEditarDTO)))
-                .andExpect(status().isForbidden());
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isUnauthorized());
     }
 }

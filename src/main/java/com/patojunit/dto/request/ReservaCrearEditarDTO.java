@@ -30,9 +30,5 @@ public class ReservaCrearEditarDTO {
 
     private Boolean pagado=false;
 
-    @NotBlank
-    @Pattern(regexp = "\\d{8,15}", message = "El teléfono debe tener entre 8 y 15 dígitos")
-    private String telefonoCliente;
-
 }
 

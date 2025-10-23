@@ -21,7 +21,6 @@ class JwtUtilsTest {
     void setUp() {
         jwtUtils = new JwtUtils();
 
-        // Seteamos los valores de los campos privados @Value manualmente
         ReflectionTestUtils.setField(jwtUtils, "privateKey", "mySuperSecretKey123");
         ReflectionTestUtils.setField(jwtUtils, "userGenerator", "testUserGenerator");
     }
@@ -35,7 +34,7 @@ class JwtUtilsTest {
         // Act
         String token = jwtUtils.createToken(authentication);
         assertNotNull(token);
-        assertTrue(token.startsWith("ey")); // Los JWT inician con "ey" (por base64 header)
+        assertTrue(token.startsWith("ey"));
 
         // Validate
         DecodedJWT decoded = jwtUtils.validateToken(token);
