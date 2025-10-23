@@ -17,3 +17,11 @@ Está pensada para su despliegue en Render.
 - JUnit + Mockito para pruebas unitarias e integración
 - Render para el deploy
 - SonarQube para análisis de calidad y métricas del código
+
+
+## 🧩 Buenas prácticas aplicadas
+
+- Implementación de principios **SOLID**.  
+- Enfoque en **Clean Code**: código legible, mantenible y con responsabilidades claras.  
+- Separación de capas (Controller, Service, Repository, DTOs, Model, Helpers y validaciones personalizadas).  
+- Pruebas unitarias y de integración para asegurar la calidad del software.  
