@@ -3,7 +3,7 @@ package com.patojunit.service.implementations;
 import com.patojunit.dto.request.ReservaCrearEditarDTO;
 import com.patojunit.dto.response.ReservaUserGetDTO;
 import com.patojunit.helpers.logger.reserva.ReservaLogger;
-import com.patojunit.helpers.ReservaPermissionValidator;
+import com.patojunit.helpers.reserva.ReservaPermissionValidator;
 import com.patojunit.helpers.security.JwtRoleValidator;
 import com.patojunit.helpers.security.JwtUserProvider;
 import com.patojunit.helpers.security.RoleBasedMapper;
@@ -89,7 +89,7 @@ class ReservaServiceTest {
 
         ReservaUserGetDTO result = reservaService.crear(dto);
 
-        verify(permisoValidator).validarPermisosGenerales(usuario);
+        verify(permisoValidator).validarPermisosGenerales();
         verify(operationService).crearReserva(dto, usuario);
         verify(reservaRepository).save(reserva);
         verify(reservaLogger).logCreacionExitosa(reserva);

@@ -19,7 +19,7 @@ public class ProductoMapper {
         producto.setNombre(dto.getNombre());
         producto.setPrecioHora(dto.getPrecioHora());
         producto.setStockDisponible(dto.getStockDisponible());
-        producto.setCantidadReservada(dto.getCantidadReservada());
+        producto.setCantidadReservadaActual(dto.getCantidadReservada());
         return producto;
     }
 
@@ -40,7 +40,7 @@ public class ProductoMapper {
     public void actualizarEntidadDesdeDTO(Producto producto, ProductoCrearEditarDTO dto) {
         producto.setNombre(dto.getNombre());
         producto.setPrecioHora(dto.getPrecioHora());
-        producto.setCantidadReservada(dto.getCantidadReservada());
+        producto.setCantidadReservadaActual(dto.getCantidadReservada());
         producto.setStockDisponible(dto.getStockDisponible());
     }
 }

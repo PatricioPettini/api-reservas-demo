@@ -1,4 +1,4 @@
-package com.patojunit.helpers;
+package com.patojunit.helpers.reserva;
 
 import com.patojunit.dto.request.ReservaCrearEditarDTO;
 import com.patojunit.dto.request.ProductoCantidadCrearEditarDTO;
@@ -63,11 +63,6 @@ public class ReservaMapper {
         return reserva.getProductos().stream()
                 .map(this::mapToProductoCantidadGetDTO)
                 .toList();
-    }
-
-    private UsuarioGetDTO mapearUsuario(Reserva reserva) {
-        if (reserva.getUsuario() == null) return null;
-        return new UsuarioGetDTO(reserva.getUsuario().getId(), reserva.getUsuario().getUsername());
     }
 
     private ProductoCantidadGetDTO mapToProductoCantidadGetDTO(ProductoCantidad pc) {

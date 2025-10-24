@@ -17,5 +17,5 @@ public class ProductoAdminGetDTO extends ProductoUserGetDTO{
 
     private LocalDateTime fechaUltimaActualizacion;
 
-    private int cantidadReservada;
+    private int cantidadReservadaActual;
 }

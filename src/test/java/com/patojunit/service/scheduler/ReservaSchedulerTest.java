@@ -1,6 +1,6 @@
 package com.patojunit.service.scheduler;
 
-import com.patojunit.helpers.ReservaStockHandler;
+import com.patojunit.helpers.reserva.ReservaStockHandler;
 import com.patojunit.model.Reserva;
 import com.patojunit.model.enums.EstadoReserva;
 import com.patojunit.repository.IReservaRepository;

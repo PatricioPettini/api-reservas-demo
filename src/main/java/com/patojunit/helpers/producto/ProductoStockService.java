@@ -17,12 +17,12 @@ public class ProductoStockService {
         validator.validarStockNoNegativo(nuevoStock);
 
         producto.setStockDisponible(nuevoStock);
-        producto.setCantidadReservada(producto.getCantidadReservada() + cantidad);
+        producto.setCantidadReservadaActual(producto.getCantidadReservadaActual() + cantidad);
         productoRepository.save(producto);
     }
 
     public void reponerStock(Producto producto, int cantidad) {
-        producto.setCantidadReservada(producto.getCantidadReservada() - cantidad);
+        producto.setCantidadReservadaActual(producto.getCantidadReservadaActual() - cantidad);
         producto.setStockDisponible(producto.getStockDisponible() + cantidad);
         productoRepository.save(producto);
     }

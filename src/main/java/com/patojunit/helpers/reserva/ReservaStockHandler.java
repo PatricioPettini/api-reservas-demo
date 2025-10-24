@@ -1,12 +1,12 @@
-package com.patojunit.helpers;
+package com.patojunit.helpers.reserva;
 
 import com.patojunit.dto.request.ReservaCrearEditarDTO;
-import com.patojunit.model.Producto;
 import com.patojunit.model.ProductoCantidad;
 import com.patojunit.model.Reserva;
 import com.patojunit.model.enums.EstadoReserva;
 import com.patojunit.service.operations.ProductoOperationService;
 import com.patojunit.service.interfaces.IProductoService;
+import com.patojunit.validation.ReservaValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -39,9 +39,6 @@ public class ReservaStockHandler {
             if (!esNueva) {
                 validator.validarProductoYaReservado(p, productos);
             }
-
-            int cantidadReservada = esNueva ? 0 : obtenerCantidadReservadaActual(reserva, p.getIdProducto());
-            actualizarStockProducto(p.getIdProducto(), p.getCantidad(), cantidadReservada);
             productos.add(mapper.toProductoCantidad(p, reserva));
         });
 
@@ -66,33 +63,5 @@ public class ReservaStockHandler {
             log.info("[StockHandler] Restablecido stock de '{}' (+{} unidades) tras finalizar reserva ID={}",
                     pc.getProducto().getNombre(), pc.getCantidad(), reserva.getId());
         });
-    }
-
-    private void actualizarStockProducto(Long idProducto, int cantidadNueva, int cantidadReservada) {
-        Producto producto = productoOperationService.getEntity(idProducto);
-        int stockDisponible = producto.getStockDisponible();
-        int stockTotalPosible = stockDisponible + cantidadReservada;
-
-        if (cantidadNueva > cantidadReservada) {
-            if (cantidadNueva > stockTotalPosible) {
-                throw new IllegalArgumentException(String.format(
-                        "Stock insuficiente para '%s' (disponible: %d, solicitado: %d)",
-                        producto.getNombre(), stockTotalPosible, cantidadNueva
-                ));
-            }
-            int cantidadADescontar = cantidadNueva - cantidadReservada;
-            productoOperationService.descontarStock(producto, cantidadADescontar);
-        } else if (cantidadNueva < cantidadReservada) {
-            int cantidadAReponer = cantidadReservada - cantidadNueva;
-            productoOperationService.restablecerStock(producto, cantidadAReponer);
-        }
-    }
-
-    private int obtenerCantidadReservadaActual(Reserva reserva, Long idProducto) {
-        return reserva.getProductos().stream()
-                .filter(pc -> pc.getProducto().getId().equals(idProducto))
-                .map(ProductoCantidad::getCantidad)
-                .findFirst()
-                .orElse(0);
     }
 }

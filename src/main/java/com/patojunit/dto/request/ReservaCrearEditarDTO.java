@@ -1,6 +1,6 @@
 package com.patojunit.dto.request;
 
-import com.patojunit.validation.FechaPosterior;
+import com.patojunit.validation.ReservaHorario;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -15,7 +15,7 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@FechaPosterior(fechaInicio = "fechaInicio", fechaFin = "fechaFin",
+@ReservaHorario(fechaInicio = "fechaInicio", fechaFin = "fechaFin",
         message = "La fecha de fin debe ser posterior a la fecha de inicio.")
 public class ReservaCrearEditarDTO {
 

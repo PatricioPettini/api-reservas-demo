@@ -1,7 +1,6 @@
 package com.patojunit.helpers.reserva;
 
 import com.patojunit.dto.response.ProductoUserGetDTO;
-import com.patojunit.helpers.ReservaCalculoService;
 import com.patojunit.model.Producto;
 import com.patojunit.model.ProductoCantidad;
 import com.patojunit.model.Reserva;
@@ -101,25 +100,14 @@ class ReservaCalculoServiceTest {
     }
 
     @Test
-    @DisplayName("Debe lanzar excepción si la duración es cero o negativa")
-    void calcularPrecioTotal_DeberiaLanzarExcepcionSiDuracionInvalida() {
-        reserva.setFechaFin(reserva.getFechaInicio());
-
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
-                calculoService.calcularPrecioTotal(reserva));
-
-        assertEquals("La duración de la reserva debe ser mayor a 0 horas.", ex.getMessage());
-        verifyNoInteractions(productoService);
-    }
-
-    @Test
     @DisplayName("Debe multiplicar correctamente precio * horas * cantidad")
     void calcularSubtotalProducto_DeberiaCalcularCorrectamente() {
-        when(productoService.get(1L)).thenReturn(productoDTO);
+        when(productoService.get(anyLong()))
+                .thenReturn(new ProductoUserGetDTO(1L,"rep-00", "reposera", BigDecimal.valueOf(1000),0));
 
         BigDecimal total = calculoService.calcularPrecioTotal(reserva);
 
-        assertEquals(new BigDecimal("600"), total);
+        assertEquals(new BigDecimal("6000"), total);
         verify(productoService).get(1L);
     }
 }

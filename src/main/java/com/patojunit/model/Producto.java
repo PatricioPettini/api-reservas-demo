@@ -32,6 +32,5 @@ public final class Producto {
 
     private int stockDisponible;
 
-    private int cantidadReservada;
-
+    private int cantidadReservadaActual;
 }

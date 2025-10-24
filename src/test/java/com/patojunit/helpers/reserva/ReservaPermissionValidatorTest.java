@@ -1,6 +1,5 @@
 package com.patojunit.helpers.reserva;
 
-import com.patojunit.helpers.ReservaPermissionValidator;
 import com.patojunit.helpers.security.JwtRoleValidator;
 import com.patojunit.helpers.security.JwtUserProvider;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,7 +34,7 @@ class ReservaPermissionValidatorTest {
         when(jwtRoleValidator.isUser()).thenReturn(false);
 
         AccessDeniedException ex = assertThrows(AccessDeniedException.class, () ->
-                permissionValidator.validarPermisosGenerales("usuario"));
+                permissionValidator.validarPermisosGenerales());
 
         assertEquals("No tenés permisos para gestionar reservas.", ex.getMessage());
         verify(jwtUserProvider).getUsuarioAutenticadoUsername();
@@ -47,7 +46,7 @@ class ReservaPermissionValidatorTest {
         when(jwtRoleValidator.isAdmin()).thenReturn(true);
 
         assertDoesNotThrow(() ->
-                permissionValidator.validarPermisosGenerales("usuario"));
+                permissionValidator.validarPermisosGenerales());
 
         verify(jwtUserProvider).getUsuarioAutenticadoUsername();
     }
@@ -58,7 +57,7 @@ class ReservaPermissionValidatorTest {
         when(jwtRoleValidator.isUser()).thenReturn(true);
 
         assertDoesNotThrow(() ->
-                permissionValidator.validarPermisosGenerales("usuario"));
+                permissionValidator.validarPermisosGenerales());
 
         verify(jwtUserProvider).getUsuarioAutenticadoUsername();
     }

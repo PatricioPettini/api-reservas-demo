@@ -5,12 +5,12 @@ import jakarta.validation.Payload;
 import java.lang.annotation.*;
 
 @Documented
-@Constraint(validatedBy = FechaPosteriorValidator.class)
+@Constraint(validatedBy = ReservaHorarioValidator.class)
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface FechaPosterior {
+public @interface ReservaHorario {
 
-    String message() default "La fecha final debe ser posterior a la fecha inicial.";
+    String message();
 
     String fechaInicio();
     String fechaFin();

@@ -2,10 +2,10 @@ package com.patojunit.service.operations;
 
 import com.patojunit.dto.request.ReservaCrearEditarDTO;
 import com.patojunit.factory.ReservaFactory;
-import com.patojunit.helpers.ReservaCalculoService;
-import com.patojunit.helpers.ReservaMapper;
-import com.patojunit.helpers.ReservaStockHandler;
-import com.patojunit.helpers.ReservaValidator;
+import com.patojunit.helpers.reserva.ReservaCalculoService;
+import com.patojunit.helpers.reserva.ReservaMapper;
+import com.patojunit.helpers.reserva.ReservaStockHandler;
+import com.patojunit.validation.ReservaValidator;
 import com.patojunit.helpers.logger.reserva.ReservaLogger;
 import com.patojunit.model.*;
 import com.patojunit.model.enums.EstadoReserva;
@@ -116,7 +116,6 @@ class ReservaOperationServiceTest {
 
         Reserva result = reservaOperationService.eliminarProductosDeReserva(reserva, List.of(1L));
 
-        verify(productoOperationService).restablecerStock(prod1, 2);
         verify(reservaLogger).logProductosEliminados(10L, 1);
         verify(reservaRepository).save(reserva);
         assertThat(result.getProductos()).hasSize(1);
@@ -130,26 +129,5 @@ class ReservaOperationServiceTest {
         assertThatThrownBy(() -> reservaOperationService.eliminarProductosDeReserva(reserva, List.of()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Debe especificar al menos un producto");
-    }
-
-    @Test
-    @DisplayName("Debe lanzar excepción si ocurre error al restablecer stock de un producto")
-    void eliminarProductosDeReserva_DeberiaLanzarErrorSiFallaReposicion() {
-        Producto prod1 = new Producto(); prod1.setId(1L); prod1.setNombre("Reposera");
-        ProductoCantidad pc1 = new ProductoCantidad(); pc1.setProducto(prod1); pc1.setCantidad(2);
-
-        Reserva reserva = new Reserva();
-        reserva.setId(5L);
-        reserva.setProductos(new ArrayList<>(List.of(pc1)));
-
-        doThrow(new RuntimeException("Fallo stock")).when(productoOperationService)
-                .restablecerStock(prod1, 2);
-
-        assertThatThrownBy(() ->
-                reservaOperationService.eliminarProductosDeReserva(reserva, List.of(1L)))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Error al restablecer stock del producto");
-
-        verify(reservaLogger).logError(eq(reserva), any());
     }
 }

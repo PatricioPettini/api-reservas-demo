@@ -1,4 +1,4 @@
-package com.patojunit.helpers;
+package com.patojunit.validation;
 
 import com.patojunit.dto.request.ProductoCantidadCrearEditarDTO;
 import com.patojunit.model.ProductoCantidad;

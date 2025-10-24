@@ -1,11 +1,11 @@
 package com.patojunit.helpers.reserva;
 
 import com.patojunit.dto.request.ProductoCantidadCrearEditarDTO;
-import com.patojunit.helpers.ReservaValidator;
 import com.patojunit.model.Producto;
 import com.patojunit.model.ProductoCantidad;
 import com.patojunit.model.Reserva;
 import com.patojunit.model.enums.EstadoReserva;
+import com.patojunit.validation.ReservaValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -1,4 +1,4 @@
-package com.patojunit.helpers;
+package com.patojunit.helpers.reserva;
 
 import org.springframework.stereotype.Component;
 

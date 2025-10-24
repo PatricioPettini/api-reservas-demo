@@ -1,6 +1,6 @@
 package com.patojunit.service.scheduler;
 
-import com.patojunit.helpers.ReservaStockHandler;
+import com.patojunit.helpers.reserva.ReservaStockHandler;
 import com.patojunit.model.Reserva;
 import com.patojunit.model.enums.EstadoReserva;
 import com.patojunit.repository.IReservaRepository;
@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,10 +21,9 @@ public class ReservaScheduler {
     private final IReservaRepository reservaRepository;
     private final ReservaStockHandler stockHandler;
 
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedDelay = 60000)
     public void manejarReservasPorFecha() {
         LocalDateTime ahora = LocalDateTime.now();
-
         try {
             activarReservasPendientes(ahora);
             finalizarReservasActivas(ahora);
@@ -32,7 +32,8 @@ public class ReservaScheduler {
         }
     }
 
-    private void activarReservasPendientes(LocalDateTime ahora) {
+    @Transactional
+    public void activarReservasPendientes(LocalDateTime ahora) {
         List<Reserva> pendientes = reservaRepository.findByEstadoAndFechaInicioBefore(
                 EstadoReserva.PENDIENTE, ahora
         );
@@ -51,7 +52,8 @@ public class ReservaScheduler {
         });
     }
 
-    private void finalizarReservasActivas(LocalDateTime ahora) {
+    @Transactional
+    public void finalizarReservasActivas(LocalDateTime ahora) {
         List<Reserva> activas = reservaRepository.findByEstadoAndFechaFinBefore(
                 EstadoReserva.ACTIVA, ahora
         );

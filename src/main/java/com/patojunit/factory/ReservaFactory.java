@@ -2,9 +2,9 @@ package com.patojunit.factory;
 
 import com.patojunit.dto.request.ReservaCrearEditarDTO;
 import com.patojunit.dto.request.ProductoCantidadCrearEditarDTO;
-import com.patojunit.helpers.ReservaCodigoService;
-import com.patojunit.helpers.ReservaMapper;
-import com.patojunit.helpers.ReservaValidator;
+import com.patojunit.helpers.reserva.ReservaCodigoService;
+import com.patojunit.helpers.reserva.ReservaMapper;
+import com.patojunit.validation.ReservaValidator;
 import com.patojunit.model.ProductoCantidad;
 import com.patojunit.model.Reserva;
 import com.patojunit.model.UserSec;

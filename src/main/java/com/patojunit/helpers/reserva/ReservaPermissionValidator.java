@@ -1,4 +1,4 @@
-package com.patojunit.helpers;
+package com.patojunit.helpers.reserva;
 
 import com.patojunit.helpers.security.JwtRoleValidator;
 import com.patojunit.helpers.security.JwtUserProvider;
@@ -15,7 +15,7 @@ public class ReservaPermissionValidator {
     private final JwtRoleValidator jwtRoleValidator;
     private final JwtUserProvider jwtUserProvider;
 
-    public void validarPermisosGenerales(Object usuario) {
+    public void validarPermisosGenerales() {
         String username = jwtUserProvider.getUsuarioAutenticadoUsername();
 
         if (!jwtRoleValidator.isAdmin() && !jwtRoleValidator.isUser()) {

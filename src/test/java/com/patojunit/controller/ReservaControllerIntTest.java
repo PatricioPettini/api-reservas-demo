@@ -53,8 +53,8 @@ class ReservaControllerIntTest {
 
         ReservaCrearEditarDTO dto = new ReservaCrearEditarDTO(
                 Collections.emptyList(),
-                LocalDateTime.now().plusMinutes(5),
-                LocalDateTime.now().plusHours(1),
+                LocalDateTime.of(2025, 10, 24, 13, 0),
+                LocalDateTime.of(2025, 10, 24, 14, 0),
                 false
         );
 
@@ -80,8 +80,8 @@ class ReservaControllerIntTest {
 
         ReservaCrearEditarDTO dto = new ReservaCrearEditarDTO(
                 Collections.emptyList(),
-                LocalDateTime.now().plusMinutes(5),
-                LocalDateTime.now().plusHours(1),
+                LocalDateTime.of(2025, 10, 24, 13, 0),
+                LocalDateTime.of(2025, 10, 24, 14, 0),
                 false
         );
 

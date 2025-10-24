@@ -1,4 +1,4 @@
-package com.patojunit.helpers;
+package com.patojunit.helpers.reserva;
 
 import com.patojunit.dto.response.ProductoUserGetDTO;
 import com.patojunit.model.ProductoCantidad;
@@ -28,9 +28,6 @@ public class ReservaCalculoService {
             throw new IllegalArgumentException("Las fechas de la reserva no pueden ser nulas.");
 
         long horas = Duration.between(reserva.getFechaInicio(), reserva.getFechaFin()).toHours();
-        if (horas <= 0)
-            throw new IllegalArgumentException("La duración de la reserva debe ser mayor a 0 horas.");
-
         return BigDecimal.valueOf(horas);
     }
 

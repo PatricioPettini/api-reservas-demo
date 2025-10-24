@@ -3,10 +3,10 @@ package com.patojunit.service.operations;
 import com.patojunit.dto.request.ReservaCrearEditarDTO;
 import com.patojunit.factory.ReservaFactory;
 import com.patojunit.helpers.logger.reserva.ReservaLogger;
-import com.patojunit.helpers.ReservaCalculoService;
-import com.patojunit.helpers.ReservaMapper;
-import com.patojunit.helpers.ReservaStockHandler;
-import com.patojunit.helpers.ReservaValidator;
+import com.patojunit.helpers.reserva.ReservaCalculoService;
+import com.patojunit.helpers.reserva.ReservaMapper;
+import com.patojunit.helpers.reserva.ReservaStockHandler;
+import com.patojunit.validation.ReservaValidator;
 import com.patojunit.model.Reserva;
 import com.patojunit.model.UserSec;
 import com.patojunit.model.enums.EstadoReserva;
@@ -84,23 +84,7 @@ public class ReservaOperationService {
 
         int cantidadInicial = reserva.getProductos().size();
 
-        reserva.getProductos().removeIf(pc -> {
-            boolean eliminar = idProductos.contains(pc.getProducto().getId());
-            if (eliminar) {
-                try {
-                    productoOperationService.restablecerStock(pc.getProducto(), pc.getCantidad());
-                } catch (Exception e) {
-                    reservaLogger.logError(reserva, e);
-                    throw new IllegalStateException(String.format(
-                            "Error al restablecer stock del producto '%s' (ID=%d): %s",
-                            pc.getProducto().getNombre(),
-                            pc.getProducto().getId(),
-                            e.getMessage()
-                    ));
-                }
-            }
-            return eliminar;
-        });
+        reserva.getProductos().removeIf(pc -> idProductos.contains(pc.getProducto().getId()));
 
         int cantidadEliminada = cantidadInicial - reserva.getProductos().size();
         reservaLogger.logProductosEliminados(reserva.getId(), cantidadEliminada);

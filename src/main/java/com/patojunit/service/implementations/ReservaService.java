@@ -2,7 +2,7 @@ package com.patojunit.service.implementations;
 
 import com.patojunit.dto.request.ReservaCrearEditarDTO;
 import com.patojunit.dto.response.ReservaUserGetDTO;
-import com.patojunit.helpers.ReservaPermissionValidator;
+import com.patojunit.helpers.reserva.ReservaPermissionValidator;
 import com.patojunit.helpers.logger.reserva.ReservaLogger;
 import com.patojunit.helpers.security.*;
 import com.patojunit.model.Reserva;
@@ -38,7 +38,7 @@ public class ReservaService implements IReservaService {
     @Transactional
     public ReservaUserGetDTO crear(ReservaCrearEditarDTO dto) {
         UserSec usuario = obtenerUsuarioAutenticado();
-        permisoValidator.validarPermisosGenerales(usuario);
+        permisoValidator.validarPermisosGenerales();
 
         try {
             Reserva reserva = operationService.crearReserva(dto, usuario);

@@ -30,7 +30,7 @@ class ProductoStockServiceTest {
         producto.setId(1L);
         producto.setNombre("Galletitas");
         producto.setStockDisponible(10);
-        producto.setCantidadReservada(2);
+        producto.setCantidadReservadaActual(2);
     }
 
     @Test
@@ -41,7 +41,7 @@ class ProductoStockServiceTest {
 
         // Assert
         assertEquals(7, producto.getStockDisponible());
-        assertEquals(5, producto.getCantidadReservada());
+        assertEquals(5, producto.getCantidadReservadaActual());
         verify(validator).validarStockNoNegativo(7);
         verify(productoRepository).save(producto);
     }
@@ -68,7 +68,7 @@ class ProductoStockServiceTest {
 
         // Assert
         assertEquals(14, producto.getStockDisponible());
-        assertEquals(-2, producto.getCantidadReservada());
+        assertEquals(-2, producto.getCantidadReservadaActual());
         verify(productoRepository).save(producto);
         verifyNoInteractions(validator);
     }
